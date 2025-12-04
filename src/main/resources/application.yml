@@ -1,0 +1,42 @@
+spring:
+  application:
+    name: j-resonance-backend
+  datasource:
+    driver-class-name: com.mysql.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/resonance
+    username: root
+    password: 1234
+  servlet:
+    multipart:
+      max-file-size: 30MB # 限制单个文件的上传大小
+      max-request-size: 30MB
+      resolve-lazily: true # 设置懒解析，提升上传性能
+  data:
+    redis:
+      host: 127.0.0.1
+      port: 6379
+      database: 0
+      password:
+      connect-timeout: 5000
+
+mybatis:
+  configuration:
+    map-underscore-to-camel-case: true #启用下划线转驼峰命名法
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl #MyBatis查询日志输出到控制台
+
+oss:
+  bucket: jaain # 对象存储桶的名字
+  url: https://jaain.oss-cn-hangzhou.aliyuncs.com/ # 外网访问的域名
+  endpoint: oss-cn-hangzhou.aliyuncs.com/ # 地域节点
+  accessKeyId: ${OSS_ACCESS_KEY_ID} # 有访问权限的用户的 access-key-id
+  accessKeySecret: ${OSS_ACCESS_KEY_SECRET} # 有访问权限的用户的 access-key-Secret
+  idleTimeout: 10000 # ossClient实例维持的空闲时间，单位毫秒，超过会自动关闭释放资源
+
+directory:
+  # 投稿视频存储目录
+  video: public/video/
+  # 分片存储目录
+  chunk: public/chunk/
+  # 投稿封面存储目录
+  cover: public/img/cover/
+  
