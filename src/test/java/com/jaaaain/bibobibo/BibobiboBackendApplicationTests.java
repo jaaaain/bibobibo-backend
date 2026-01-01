@@ -1,10 +1,10 @@
-package com.jaaaain.jresonance;
+package com.jaaaain.bibobibo;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-class JResonanceBackendApplicationTests {
+class BibobiboBackendApplicationTests {
 
 	@Test
 	void contextLoads() {

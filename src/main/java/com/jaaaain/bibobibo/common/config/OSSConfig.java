@@ -1,4 +1,4 @@
-package com.jaaaain.jresonance.common.config;
+package com.jaaaain.bibobibo.common.config;
 
 import lombok.Data;
 import org.springframework.beans.factory.annotation.Value;
@@ -27,5 +27,7 @@ public class OSSConfig implements Serializable {
 
     @Value("${oss.idleTimeout}")
     private long idleTimeout;
- 
+
+    @Value("${oss.maxSize}")
+    private long maxSize;
 }

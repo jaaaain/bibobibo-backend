@@ -1,9 +1,9 @@
 spring:
   application:
-    name: j-resonance-backend
+    name: bibobibo-backend
   datasource:
-    driver-class-name: com.mysql.jdbc.Driver
-    url: jdbc:mysql://localhost:3306/resonance
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/bibobibo
     username: root
     password: 1234
   servlet:
@@ -17,9 +17,22 @@ spring:
       port: 6379
       database: 0
       password:
-      connect-timeout: 5000
+      timeout: 5000
+  security:
+    user:
+      name: admin
+      password: 1234
 
-mybatis:
+mybatis-plus:
+  # 全局配置
+  global-config:
+    db-config:
+      # 全局逻辑删除的字段名
+      logic-delete-field: deleted
+      # 逻辑已删除值(默认为 1)
+      logic-delete-value: 1
+      # 逻辑未删除值(默认为 0)
+      logic-not-delete-value: 0
   configuration:
     map-underscore-to-camel-case: true #启用下划线转驼峰命名法
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl #MyBatis查询日志输出到控制台
@@ -31,6 +44,8 @@ oss:
   accessKeyId: ${OSS_ACCESS_KEY_ID} # 有访问权限的用户的 access-key-id
   accessKeySecret: ${OSS_ACCESS_KEY_SECRET} # 有访问权限的用户的 access-key-Secret
   idleTimeout: 10000 # ossClient实例维持的空闲时间，单位毫秒，超过会自动关闭释放资源
+  maxSize: 30 # 上传文件最大值 MB
+
 
 directory:
   # 投稿视频存储目录
@@ -39,4 +54,21 @@ directory:
   chunk: public/chunk/
   # 投稿封面存储目录
   cover: public/img/cover/
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    tags-sorter: alpha
+    operations-sorter: alpha
+  api-docs:
+    path: /v3/api-docs
+  group-configs:
+    - group: 'default'
+      paths-to-match: '/**' #默认扫描全部的接口
+      packages-to-scan: com.jaaaain.bibobibo.app.controller  #不加会默认扫描全部的包
+
   
+logging:
+  level:
+    # Mapper所在包路径（如果想单独设置个别的包或者设置多个包也是可以的）
+    com.abc.services: debug
