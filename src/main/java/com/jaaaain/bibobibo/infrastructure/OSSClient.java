@@ -144,6 +144,7 @@ public class OSSClient {
         }
 
         try {
+            log.info("开始上传文件，path: {}, size: {}", path, size);
             PutObjectRequest request = new PutObjectRequest(ossConfig.getBucket(), path, inputStream);
             client.putObject(request);
             return getUrl(path);

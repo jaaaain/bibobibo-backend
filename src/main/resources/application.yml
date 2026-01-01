@@ -39,8 +39,8 @@ mybatis-plus:
 
 oss:
   bucket: jaain # 对象存储桶的名字
-  url: https://jaain.oss-cn-hangzhou.aliyuncs.com # 外网访问的域名
-  endpoint: oss-cn-hangzhou.aliyuncs.com # 地域节点
+  url: https://jaain.oss-cn-hangzhou.aliyuncs.com/ # 外网访问的域名
+  endpoint: oss-cn-hangzhou.aliyuncs.com/ # 地域节点
   accessKeyId: ${OSS_ACCESS_KEY_ID} # 有访问权限的用户的 access-key-id
   accessKeySecret: ${OSS_ACCESS_KEY_SECRET} # 有访问权限的用户的 access-key-Secret
   idleTimeout: 10000 # ossClient实例维持的空闲时间，单位毫秒，超过会自动关闭释放资源
@@ -75,3 +75,10 @@ logging:
   level:
     # Mapper所在包路径（如果想单独设置个别的包或者设置多个包也是可以的）
     com.jaaaain.bibobibo.app.mapper: debug
+
+server:
+  servlet:
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true

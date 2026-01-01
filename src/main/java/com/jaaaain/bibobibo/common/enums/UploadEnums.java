@@ -5,11 +5,11 @@ import com.baomidou.mybatisplus.annotation.EnumValue;
 public class UploadEnums {
 
     public enum FileUploadTypeEnum {
-        FILE("file", "/file/"),   // 文件
-        VIDEO("video", "/video/%s/"),   // 视频
-        PICTURE("picture", "/picture/"), // 图片
-        AVATAR("avatar", "/avatar/"), // 头像
-        COVER("cover", "/video/%s/cover/");   // 封面
+        FILE("file", "file/"),   // 文件
+        VIDEO("video", "video/%s/"),   // 视频
+        PICTURE("picture", "picture/"), // 图片
+        AVATAR("avatar", "avatar/"), // 头像
+        COVER("cover", "video/%s/cover/");   // 封面
         @EnumValue
         public final String type;
         public final String path;

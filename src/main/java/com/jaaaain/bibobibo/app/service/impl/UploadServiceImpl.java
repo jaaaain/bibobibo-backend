@@ -27,7 +27,6 @@ import java.util.regex.Pattern;
 public class UploadServiceImpl implements UploadService {
     private final OSSClient ossClient;
     private final UploadRedisRepo redisRepo;
-    private final VideoService videoService;
 
     // 分片大小
     private final long CHUNK_SIZE = 5 * 1024L * 1024L; // 5MB
@@ -115,12 +114,6 @@ public class UploadServiceImpl implements UploadService {
         session.setCompleted(true);
         redisRepo.setUploadSession(md5, session);
 
-        // 保存视频
-        Video video = new Video();
-        video.setUid(authDto.getId());
-        video.setVideoUrl(path); // todo 视频地址??
-        video.setState(VideoEnums.State.DRAFT);// 草稿
-        videoService.save(video);
         // Redis 缓存文件md5
         return new UploadData.FinishVO(completeRes.getETag(), path);// todo 返回video
     }
@@ -130,13 +123,7 @@ public class UploadServiceImpl implements UploadService {
      */
     public String upload(UserData.AuthDto authDto, File file, UploadEnums.FileUploadTypeEnum type, String fileKey) {
         String path = ossClient.getPath(type, file.getName(), fileKey);
-        String url = ossClient.putFile(path, FileUtil.getInputStream(file));
-        Video video = new Video();
-        video.setUid(authDto.getId());
-        video.setVideoUrl(url);
-        video.setState(VideoEnums.State.DRAFT);// 草稿
-        videoService.save(video);
-        return url;
+        return ossClient.putFile(path, FileUtil.getInputStream(file));
     }
 
     /**

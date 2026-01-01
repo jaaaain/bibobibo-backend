@@ -21,6 +21,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.InputStream;
 import java.nio.file.Path;
 
 @Service
@@ -30,6 +33,7 @@ public class VideoServiceImpl extends ServiceImpl<VideoMapper, Video> implements
     private final VideoMapper videoMapper;
     private final FfmpegClient ffmpegClient;
     private final OSSClient ossClient;
+    private final UploadService uploadService;
 
     @Override
     public Video createDraft(String url, String title, String fileKey) {
@@ -45,8 +49,9 @@ public class VideoServiceImpl extends ServiceImpl<VideoMapper, Video> implements
         VideoData.VideoMeta videoMeta = ffmpegClient.analyzeVideo(url);
         video.setDuration(videoMeta.getDuration());
         // 获取视频封面
-        String coverPath = ossClient.getPath(UploadEnums.FileUploadTypeEnum.COVER, ".jpg", fileKey);
-        String coverUrl = ffmpegClient.generateCover(url, ossClient.getUrl(coverPath));
+        String localCoverPath = "D:/000/pictures/cover.jpg";
+        ffmpegClient.generateCover(url, localCoverPath);
+        String coverUrl = uploadService.upload(authDto, new File(localCoverPath), UploadEnums.FileUploadTypeEnum.COVER, fileKey);
         video.setCoverUrl(coverUrl);
 
         save(video);
