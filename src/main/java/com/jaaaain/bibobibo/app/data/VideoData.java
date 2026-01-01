@@ -1,5 +1,6 @@
 package com.jaaaain.bibobibo.app.data;
 
+import com.jaaaain.bibobibo.common.enums.VideoEnums;
 import lombok.*;
 
 import java.util.Date;
@@ -41,6 +42,16 @@ public class VideoData {
     }
     // ===VO===
     // ===DTO===
+    @Data
+    public static class VideoDto {
+        private Long id;
+        private String title; // 视频标题
+        private String introduction; // 视频简介
+        private String coverUrl; // 视频封面url
+        private String tags; // 标签
+        private VideoEnums.Type type; // 类型：-1 未知；0自制；1转载
+    }
+
     // ===POJO===
     @Data
     @Builder

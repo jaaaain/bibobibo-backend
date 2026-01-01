@@ -1,5 +1,6 @@
 package com.jaaaain.bibobibo.app.controller;
 
+import cn.hutool.core.bean.BeanUtil;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.jaaaain.bibobibo.app.data.UserData;
 import com.jaaaain.bibobibo.app.data.VideoData;
@@ -13,6 +14,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDateTime;
 
 @RestController
 @RequestMapping("/video")
@@ -30,17 +33,47 @@ public class VideoController {
 
     @PostMapping("/update")
     @Operation(summary = "更新视频信息", description = "更新视频的基本信息")
-    public Result<Void> update(@RequestBody Video video){
+    public Result<Void> update(@AuthenticationPrincipal UserData.AuthDto authDto ,@RequestBody VideoData.VideoDto videoDto){
+        Video video = videoService.getById(videoDto.getId());
+        if(video == null){
+            return Result.failed("视频不存在");
+        }
+        // 校验该视频是否属于当前用户
+        if(!video.getUid().equals(authDto.getId())){// todo 有没有其他好办法？
+            return Result.failed("无权限");
+        }
+        // 仅复制非null字段
+        BeanUtil.copyProperties(videoDto, video, true);
         videoService.updateById(video);
         return Result.success();
     }
 
     @PostMapping("/publish/{id}")
     @Operation(summary = "发布视频", description = "提交视频审核")
-    public Result<Void> publish(@PathVariable Long id){
+    public Result<Void> publish(@AuthenticationPrincipal UserData.AuthDto authDto ,@PathVariable Long id){
         Video video = videoService.getById(id);
+        if(video == null){
+            return Result.failed("视频不存在");
+        }
+        // 校验该视频是否属于当前用户
+        if(!video.getUid().equals(authDto.getId())){
+            return Result.failed("无权限");
+        }
+        // 判断状态
+        switch (video.getState()){
+            case DRAFT, FAILED_SUBMIT:
+                break;
+            case REVIEWING:
+                return Result.failed("视频正在审核中");
+            case APPROVED:
+                return Result.failed("视频已发布");
+            case VIOLATION_DELETE:
+                return Result.failed("视频违规被删除");
+        }
         video.setState(VideoEnums.State.REVIEWING);
-        // todo 送给阿里云审核
+        video.setState(VideoEnums.State.APPROVED); // todo 送给阿里云审核，后续改为在消息队列中更新审核状态
+        video.setReleaseTime(LocalDateTime.now());
+        videoService.updateById(video);
         return Result.success();
     }
 

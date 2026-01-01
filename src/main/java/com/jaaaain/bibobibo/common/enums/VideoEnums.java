@@ -6,6 +6,7 @@ public class VideoEnums {
 
     /** 视频类型 */
     public enum Type {
+        UNKNOWN(-1),   // 未知
         ORIGINAL(0),   // 自制
         REPRINT(1);    // 转载
 

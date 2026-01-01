@@ -13,7 +13,6 @@ import com.jaaaain.bibobibo.common.enums.VideoEnums;
 import com.jaaaain.bibobibo.infrastructure.FfmpegClient;
 import com.jaaaain.bibobibo.dal.entity.Video;
 import com.jaaaain.bibobibo.dal.mapper.VideoMapper;
-import com.jaaaain.bibobibo.infrastructure.OSSClient;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -21,10 +20,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.InputStream;
-import java.nio.file.Path;
 
 @Service
 @RequiredArgsConstructor
@@ -32,7 +27,6 @@ public class VideoServiceImpl extends ServiceImpl<VideoMapper, Video> implements
 
     private final VideoMapper videoMapper;
     private final FfmpegClient ffmpegClient;
-    private final OSSClient ossClient;
     private final UploadService uploadService;
 
     @Override
