@@ -7,7 +7,6 @@ import com.jaaaain.bibobibo.app.service.VideoService;
 import com.jaaaain.bibobibo.common.PageResult;
 import com.jaaaain.bibobibo.common.Result;
 import com.jaaaain.bibobibo.common.enums.VideoEnums;
-import com.jaaaain.bibobibo.common.utils.OSSUtil;
 import com.jaaaain.bibobibo.dal.entity.Video;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -25,8 +24,8 @@ public class VideoController {
 
     @PostMapping("/create-draft")
     @Operation(summary = "创建视频草稿", description = "创建视频草稿记录")
-    public Result<Video> createDraft(@RequestParam String url){
-        return Result.success(videoService.createDraft(url));
+    public Result<Video> createDraft(@RequestParam String url, @RequestParam String title, @RequestParam String fileKey){
+        return Result.success(videoService.createDraft(url, title, fileKey));
     }
 
     @PostMapping("/update")

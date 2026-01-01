@@ -6,11 +6,10 @@ public class UploadEnums {
 
     public enum FileUploadTypeEnum {
         FILE("file", "/file/"),   // 文件
-        VIDEO("video", "/video/"),   // 视频
-        CHUNK("chunk", "/chunk/"),   // 分片
+        VIDEO("video", "/video/%s/"),   // 视频
         PICTURE("picture", "/picture/"), // 图片
         AVATAR("avatar", "/avatar/"), // 头像
-        COVER("cover", "/cover/");   // 封面
+        COVER("cover", "/video/%s/cover/");   // 封面
         @EnumValue
         public final String type;
         public final String path;

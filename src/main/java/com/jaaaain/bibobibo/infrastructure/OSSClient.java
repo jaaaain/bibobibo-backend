@@ -1,10 +1,7 @@
-package com.jaaaain.bibobibo.common.utils;
+package com.jaaaain.bibobibo.infrastructure;
 
 import cn.hutool.core.io.FileUtil;
-import cn.hutool.core.map.MapUtil;
-import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
-import cn.hutool.json.JSONUtil;
 import com.aliyun.oss.OSS;
 import com.aliyun.oss.OSSClientBuilder;
 import com.aliyun.oss.model.*;
@@ -16,23 +13,16 @@ import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.io.InputStream;
 import java.net.URL;
-import java.nio.file.Files;
-import java.time.Duration;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
 @Slf4j
-public class OSSUtil {
+public class OSSClient {
     private final OSSConfig ossConfig;
     private static OSS client;
 
@@ -93,7 +83,7 @@ public class OSSUtil {
      * 取消分片上传
      */
     public void abortMultipart(File file, UploadEnums.FileUploadTypeEnum type, String uploadId) {
-        String path = getPath(type, file.getName());
+        String path = getPath(type, file.getName(), null);
         client.abortMultipartUpload(new AbortMultipartUploadRequest(ossConfig.getBucket(), path, uploadId));
     }
 
@@ -101,28 +91,23 @@ public class OSSUtil {
      * 根据path生成文件的访问地址
      */
     public String getUrl(String path) {
-        // 拼接文件访问路径。由于拼接的字符串大多为String对象，而不是""的形式，所以直接用+拼接的方式没有优势
-        StringBuffer url = new StringBuffer();
-        url.append("http://")
-                .append(ossConfig.getEndpoint())
-                .append(".")
-                .append(ossConfig.getBucket())
-                .append("/")
-                .append(path);
-        return url.toString();
+        return ossConfig.getUrl() + path;
     }
 
     /**
-     * 获取上传文件的 path（格式：/path/yyyyMMdd-UUID.ext）
+     * 获取上传文件的 path（格式：/path/UUID.ext）
      * @param type   文件类型（用于获取文件存储路径）
      * @param fileName 文件名称（用于提取后缀）
+     * @param fileKey 文件Key（用于获取占位符）
      */
-    public String getPath(UploadEnums.FileUploadTypeEnum type, String fileName) {
+    public String getPath(UploadEnums.FileUploadTypeEnum type, String fileName, String fileKey) {
+        // fileKey/uuid处理
+        String uuid = UUID.randomUUID().toString().replace("-", "");
         // 路径处理
         String path = StrUtil.blankToDefault(type.path, UploadEnums.FileUploadTypeEnum.FILE.path);
-        // 文件名处理
-        String datePath = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
-        String uuid = UUID.randomUUID().toString().replace("-", "");
+        if (path.contains("%s")) {
+            path = String.format(path, fileKey != null ? fileKey : uuid); // video/fileKey/uuid.ext；video/fileKey/cover/uuid.ext
+        }
         // 后缀处理（文件名后缀）
         String suffix = FileUtil.getSuffix(fileName);
         if (StringUtils.isBlank(suffix)) {
@@ -130,9 +115,7 @@ public class OSSUtil {
         }
         String ext = suffix.startsWith(".")? suffix : "." + suffix;
 
-        return String.format(
-                "%s/%s-%s%s", path, datePath, uuid, ext
-        );
+        return path + uuid + ext;
     }
 
     /**

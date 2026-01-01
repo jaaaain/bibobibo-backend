@@ -9,6 +9,7 @@ public class VideoEnums {
         ORIGINAL(0),   // 自制
         REPRINT(1);    // 转载
 
+        @EnumValue
         public final int value;
         Type(int value) { this.value = value; }
     }
@@ -18,6 +19,7 @@ public class VideoEnums {
         PUBLIC(0),     // 公开
         PRIVATE(1);    // 仅自己
 
+        @EnumValue
         public final int value;
         Visible(int value) { this.value = value; }
     }

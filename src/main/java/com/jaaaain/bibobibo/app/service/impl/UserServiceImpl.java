@@ -7,8 +7,6 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.jaaaain.bibobibo.app.data.UserData;
 import com.jaaaain.bibobibo.app.service.UserService;
-import com.jaaaain.bibobibo.common.constants.RedisConstants;
-import com.jaaaain.bibobibo.common.utils.RedisUtil;
 import com.jaaaain.bibobibo.dal.entity.User;
 import com.jaaaain.bibobibo.dal.mapper.UserMapper;
 import com.jaaaain.bibobibo.middleware.redis.AuthRedisRepo;
@@ -16,11 +14,6 @@ import lombok.extern.slf4j.Slf4j;
 import cn.hutool.core.util.RandomUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
-import java.util.concurrent.TimeUnit;
-
-import static com.jaaaain.bibobibo.common.constants.RedisConstants.LOGIN_CODE_KEY;
-import static com.jaaaain.bibobibo.common.constants.RedisConstants.LOGIN_CODE_TTL;
 
 @Slf4j
 @Service

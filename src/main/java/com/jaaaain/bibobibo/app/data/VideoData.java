@@ -1,7 +1,6 @@
 package com.jaaaain.bibobibo.app.data;
 
-import lombok.Data;
-import lombok.EqualsAndHashCode;
+import lombok.*;
 
 import java.util.Date;
 
@@ -43,4 +42,25 @@ public class VideoData {
     // ===VO===
     // ===DTO===
     // ===POJO===
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class VideoMeta {
+
+        /** 视频时长（秒） */
+        private Double duration;
+
+        /** 分辨率 */
+        private Integer width;
+        private Integer height;
+
+        /** 编码信息 */
+        private String videoCodec;
+        private String audioCodec;
+
+        /** 码率（bit/s） */
+        private Long bitrate;
+    }
+
 }

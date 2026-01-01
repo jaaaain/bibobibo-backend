@@ -40,7 +40,7 @@ class FileUploadController {
      * 上传文件，返回文件路径
      */
     @PostMapping("/upload")
-    public Result<String> upload(@AuthenticationPrincipal UserData.AuthDto authDto,@RequestBody File file, @RequestBody UploadEnums.FileUploadTypeEnum type) {
-        return Result.success(uploadService.upload(authDto, file, type));
+    public Result<String> upload(@AuthenticationPrincipal UserData.AuthDto authDto,@RequestBody File file, @RequestBody UploadEnums.FileUploadTypeEnum type, @RequestParam(required = false) String fileKey) {
+        return Result.success(uploadService.upload(authDto, file, type, fileKey));
     }
 }

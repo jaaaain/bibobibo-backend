@@ -1,25 +1,20 @@
 package com.jaaaain.bibobibo.app.controller;
 
 import cn.hutool.core.bean.BeanUtil;
-import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.jaaaain.bibobibo.app.data.UserData;
 import com.jaaaain.bibobibo.app.service.UserService;
 import com.jaaaain.bibobibo.common.PageResult;
 import com.jaaaain.bibobibo.common.Result;
 import com.jaaaain.bibobibo.common.constants.RedisConstants;
-import com.jaaaain.bibobibo.common.utils.RedisUtil;
+import com.jaaaain.bibobibo.infrastructure.RedisClient;
 import com.jaaaain.bibobibo.dal.entity.User;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.BeanUtils;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.Objects;
 
 @RestController
 @RequestMapping("/user")
@@ -27,7 +22,7 @@ import java.util.Objects;
 @Slf4j
 public class UserController {
     private final UserService userService;
-    private final RedisUtil redisUtil;
+    private final RedisClient redisClient;
 
     @GetMapping("/info")
     public Result<UserData.SimpleVO> simpleInfo(@AuthenticationPrincipal UserData.AuthDto authDto) {
@@ -61,7 +56,7 @@ public class UserController {
     public Result<Boolean> logout(@AuthenticationPrincipal UserData.AuthDto authDto) {
         log.info("登出请求：{}", authDto);
         String token = authDto.getToken();
-        redisUtil.delete(RedisConstants.LOGIN_TOKEN_KEY + token);
+        redisClient.delete(RedisConstants.LOGIN_TOKEN_KEY + token);
         return Result.success(true);
     }
 

@@ -1,4 +1,4 @@
-package com.jaaaain.bibobibo.common.utils;
+package com.jaaaain.bibobibo.infrastructure;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -8,7 +8,7 @@ import java.util.concurrent.TimeUnit;
 
 @Component
 @RequiredArgsConstructor
-public class RedisUtil {
+public class RedisClient {
 
     private final RedisTemplate<String, Object> redisTemplate;
 

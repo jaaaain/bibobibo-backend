@@ -9,5 +9,5 @@ import java.io.File;
 public interface UploadService {
     UploadData.InitUploadVO init(UploadData.InitUploadDto req);
     UploadData.FinishVO finish(UserData.AuthDto authDto,String md5);
-    String upload(UserData.AuthDto authDto, File file, UploadEnums.FileUploadTypeEnum type);
+    String upload(UserData.AuthDto authDto, File file, UploadEnums.FileUploadTypeEnum type, String fileKey);
 }

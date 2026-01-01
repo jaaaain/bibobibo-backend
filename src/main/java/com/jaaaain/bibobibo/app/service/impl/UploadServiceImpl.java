@@ -9,7 +9,7 @@ import com.jaaaain.bibobibo.app.service.UploadService;
 import com.jaaaain.bibobibo.app.service.VideoService;
 import com.jaaaain.bibobibo.common.enums.UploadEnums;
 import com.jaaaain.bibobibo.common.enums.VideoEnums;
-import com.jaaaain.bibobibo.common.utils.OSSUtil;
+import com.jaaaain.bibobibo.infrastructure.OSSClient;
 import com.jaaaain.bibobibo.dal.entity.Video;
 import com.jaaaain.bibobibo.middleware.redis.UploadRedisRepo;
 import lombok.RequiredArgsConstructor;
@@ -25,7 +25,7 @@ import java.util.regex.Pattern;
 @RequiredArgsConstructor
 @Slf4j
 public class UploadServiceImpl implements UploadService {
-    private final OSSUtil ossUtil;
+    private final OSSClient ossClient;
     private final UploadRedisRepo redisRepo;
     private final VideoService videoService;
 
@@ -62,7 +62,7 @@ public class UploadServiceImpl implements UploadService {
         List<String> partUrls = new ArrayList<>();
         for (int i = 1; i <= totalParts; i++) {
             // 为各分片生成预签名 URL
-            partUrls.add(ossUtil.presignPutUrl(path, uploadId, i));
+            partUrls.add(ossClient.presignPutUrl(path, uploadId, i));
             log.info("part {} presign put url", i);
         }
         return new UploadData.InitUploadVO(UploadEnums.FileUploadStateEnum.RESUME, uploadId, CHUNK_SIZE, totalParts, partUrls, path);
@@ -73,9 +73,9 @@ public class UploadServiceImpl implements UploadService {
      */
     private UploadData.InitUploadVO createNewUpload(UploadData.InitUploadDto req) {
         // 1. 获取文件路径
-        String path = ossUtil.getPath(req.getType(), req.getFileName());
+        String path = ossClient.getPath(req.getType(), req.getFileName(), null);
         // 2. 初始化分片上传
-        InitiateMultipartUploadResult initResult = ossUtil.initMultipart(path);
+        InitiateMultipartUploadResult initResult = ossClient.initMultipart(path);
         String uploadId = initResult.getUploadId();
         // 3. 计算分片数量
         int totalParts = (int) ((req.getFileSize() + CHUNK_SIZE - 1) / CHUNK_SIZE);
@@ -92,7 +92,7 @@ public class UploadServiceImpl implements UploadService {
         List<String> partUrls = new ArrayList<>();
         for (int i = 1; i <= totalParts; i++) {
             // 为各分片生成预签名 URL
-            partUrls.add(ossUtil.presignPutUrl(path, uploadId, i));
+            partUrls.add(ossClient.presignPutUrl(path, uploadId, i));
             log.info("part {} presign put url", i);
         }
         // 6. 返回分片预签名信息
@@ -111,7 +111,7 @@ public class UploadServiceImpl implements UploadService {
         String path = session.getPath();
         String uploadId = session.getUploadId();
         // 合并分片
-        CompleteMultipartUploadResult completeRes = ossUtil.completeMultipart(path, uploadId);
+        CompleteMultipartUploadResult completeRes = ossClient.completeMultipart(path, uploadId);
         session.setCompleted(true);
         redisRepo.setUploadSession(md5, session);
 
@@ -128,9 +128,9 @@ public class UploadServiceImpl implements UploadService {
     /**
      * 上传文件
      */
-    public String upload(UserData.AuthDto authDto, File file, UploadEnums.FileUploadTypeEnum type) {
-        String path = ossUtil.getPath(type, file.getName());
-        String url = ossUtil.putFile(path, FileUtil.getInputStream(file));
+    public String upload(UserData.AuthDto authDto, File file, UploadEnums.FileUploadTypeEnum type, String fileKey) {
+        String path = ossClient.getPath(type, file.getName(), fileKey);
+        String url = ossClient.putFile(path, FileUtil.getInputStream(file));
         Video video = new Video();
         video.setUid(authDto.getId());
         video.setVideoUrl(url);

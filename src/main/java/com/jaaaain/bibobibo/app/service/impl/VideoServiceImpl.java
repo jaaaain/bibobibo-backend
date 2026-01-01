@@ -4,40 +4,51 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.jaaaain.bibobibo.app.data.UserData;
 import com.jaaaain.bibobibo.app.data.VideoData;
+import com.jaaaain.bibobibo.app.service.UploadService;
 import com.jaaaain.bibobibo.app.service.VideoService;
+import com.jaaaain.bibobibo.common.enums.UploadEnums;
 import com.jaaaain.bibobibo.common.enums.VideoEnums;
-import com.jaaaain.bibobibo.common.utils.OSSUtil;
-import com.jaaaain.bibobibo.common.utils.RedisUtil;
+import com.jaaaain.bibobibo.infrastructure.FfmpegClient;
 import com.jaaaain.bibobibo.dal.entity.Video;
 import com.jaaaain.bibobibo.dal.mapper.VideoMapper;
+import com.jaaaain.bibobibo.infrastructure.OSSClient;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.File;
+import java.nio.file.Path;
 
 @Service
 @RequiredArgsConstructor
 public class VideoServiceImpl extends ServiceImpl<VideoMapper, Video> implements VideoService {
 
     private final VideoMapper videoMapper;
-    private final RedisUtil redisUtil;
-    private final OSSUtil ossUtil;
+    private final FfmpegClient ffmpegClient;
+    private final OSSClient ossClient;
 
     @Override
-    public Video createDraft(String url) {
+    public Video createDraft(String url, String title, String fileKey) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        UserData.AuthDto authDto = (UserData.AuthDto) authentication.getPrincipal();
         Video video = new Video();
+        video.setUid(authDto.getId());
+        video.setTitle(title);
         video.setVideoUrl(url);
+        video.setVisible(VideoEnums.Visible.PUBLIC);
         video.setState(VideoEnums.State.DRAFT);
-        // todo 访问阿里云，ffmpeg计算duration
-        try (InputStream inputStream = ossUtil.getInputStream(url)) {
-            // 使用FFmpeg计算视频时长
-            // ...
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        // 获取视频元数据
+        VideoData.VideoMeta videoMeta = ffmpegClient.analyzeVideo(url);
+        video.setDuration(videoMeta.getDuration());
+        // 获取视频封面
+        String coverPath = ossClient.getPath(UploadEnums.FileUploadTypeEnum.COVER, ".jpg", fileKey);
+        String coverUrl = ffmpegClient.generateCover(url, ossClient.getUrl(coverPath));
+        video.setCoverUrl(coverUrl);
+
         save(video);
         return video;
     }
