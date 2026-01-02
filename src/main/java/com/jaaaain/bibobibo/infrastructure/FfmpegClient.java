@@ -10,7 +10,6 @@ import org.springframework.stereotype.Component;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -32,7 +31,7 @@ public class FfmpegClient {
     /**
      * 通过视频 url 解析视频元信息
      */
-    public VideoData.VideoMeta analyzeVideo(String videoUrl) {
+    public VideoData.Meta analyzeVideo(String videoUrl) {
         try {
             String json = probe(videoUrl);
             return parseForVideoMeta(json);
@@ -63,7 +62,7 @@ public class FfmpegClient {
     /**
      * 解析 JSON 为 VideoMeta
      */
-    private VideoData.VideoMeta parseForVideoMeta(String json) throws JsonProcessingException {
+    private VideoData.Meta parseForVideoMeta(String json) throws JsonProcessingException {
         JsonNode root = objectMapper.readTree(json);
 
         JsonNode formatNode = root.path("format");
@@ -94,7 +93,7 @@ public class FfmpegClient {
             }
         }
 
-        return VideoData.VideoMeta.builder()
+        return VideoData.Meta.builder()
                 .duration(duration)
                 .width(width)
                 .height(height)

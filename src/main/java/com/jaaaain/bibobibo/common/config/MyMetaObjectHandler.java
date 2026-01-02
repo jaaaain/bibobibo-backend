@@ -1,4 +1,4 @@
-package com.jaaaain.bibobibo.common.enums;
+package com.jaaaain.bibobibo.common.config;
 
 import com.baomidou.mybatisplus.core.handlers.MetaObjectHandler;
 import org.apache.ibatis.reflection.MetaObject;

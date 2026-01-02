@@ -25,25 +25,24 @@ public class UserController {
     private final RedisClient redisClient;
 
     @GetMapping("/info")
-    public Result<UserData.SimpleVO> simpleInfo(@AuthenticationPrincipal UserData.AuthDto authDto) {
+    public Result<UserData.SelfCardVO> simpleInfo(@AuthenticationPrincipal UserData.AuthDto authDto) {
         User user = userService.getById(authDto.getId());
         if (user == null) {
             return Result.failed("用户不存在");
         }
-        UserData.SimpleVO simpleVO = new UserData.SimpleVO();
-        simpleVO.setAvatar(user.getAvatar());
-        simpleVO.setUsername(user.getUsername());
-        simpleVO.setNickname(user.getNickname());
+        UserData.SelfCardVO selfCardVO = new UserData.SelfCardVO();
+        selfCardVO.setAvatar(user.getAvatar());
+        selfCardVO.setNickname(user.getNickname());
         // 根据经验值估算等级（假设每级经验差固定为2000）
         int estimatedLevel = Math.min(6, user.getExp() / 2000 + 1);
         // todo 等级所需经验上下限；暂只显示等级
-        simpleVO.setExp(user.getExp());
-        simpleVO.setLevel(estimatedLevel);
-        simpleVO.setVip(user.getVip()); // todo VIP到期时间
-        simpleVO.setCoin(user.getCoin());
-        simpleVO.setState(user.getState());
+        selfCardVO.setExp(user.getExp());
+        selfCardVO.setLevel(estimatedLevel);
+        selfCardVO.setVip(user.getVip()); // todo VIP到期时间
+        selfCardVO.setCoin(user.getCoin());
+        selfCardVO.setState(user.getState());
 
-        return Result.success(simpleVO);
+        return Result.success(selfCardVO);
     }
 
     @PostMapping("/login")
@@ -82,20 +81,14 @@ public class UserController {
 
     // 详情
     @GetMapping("/detail")
-    public Result<UserData.DetailVO> detail(@AuthenticationPrincipal UserData.AuthDto authDto) {
+    public Result<UserData.SelfProfileVO> detail(@AuthenticationPrincipal UserData.AuthDto authDto) {
         User user = userService.getById(authDto.getId());
         if (user == null) {
             return Result.failed("用户不存在");
         }
-        UserData.DetailVO detailVO = new UserData.DetailVO();
-        BeanUtil.copyProperties(user, detailVO);
-        return Result.success(detailVO);
-    }
-
-    // 新增
-    @PostMapping
-    public Result<Boolean> add(@RequestBody User user) {
-        return Result.success(userService.save(user));
+        UserData.SelfProfileVO selfProfileVO = new UserData.SelfProfileVO();
+        BeanUtil.copyProperties(user, selfProfileVO);
+        return Result.success(selfProfileVO);
     }
 
     // 修改

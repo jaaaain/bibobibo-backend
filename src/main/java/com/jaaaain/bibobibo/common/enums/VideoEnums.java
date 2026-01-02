@@ -30,8 +30,7 @@ public class VideoEnums {
         DRAFT(-1),            // 草稿
         REVIEWING(0),        // 审核中
         APPROVED(1),         // 通过
-        FAILED_SUBMIT(2),    // 不通过 - 投稿问题
-        VIOLATION_DELETE(3); // 违规删除
+        VIOLATION_DELETE(2);    // 违规删除
 
         @EnumValue
         public final int value;

@@ -1,5 +1,6 @@
 package com.jaaaain.bibobibo.app.service.impl;
 
+import cn.hutool.core.bean.BeanUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -7,30 +8,42 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.jaaaain.bibobibo.app.data.UserData;
 import com.jaaaain.bibobibo.app.data.VideoData;
 import com.jaaaain.bibobibo.app.service.UploadService;
+import com.jaaaain.bibobibo.app.service.UserService;
 import com.jaaaain.bibobibo.app.service.VideoService;
 import com.jaaaain.bibobibo.common.enums.UploadEnums;
 import com.jaaaain.bibobibo.common.enums.VideoEnums;
+import com.jaaaain.bibobibo.dal.entity.User;
 import com.jaaaain.bibobibo.infrastructure.FfmpegClient;
 import com.jaaaain.bibobibo.dal.entity.Video;
 import com.jaaaain.bibobibo.dal.mapper.VideoMapper;
+import com.jaaaain.bibobibo.security.auth.AuthContext;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import java.io.File;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class VideoServiceImpl extends ServiceImpl<VideoMapper, Video> implements VideoService {
 
     private final VideoMapper videoMapper;
     private final FfmpegClient ffmpegClient;
     private final UploadService uploadService;
+    private final UserService userService;
+    private final AuthContext auth;
 
     @Override
-    public Video createDraft(String url, String title, String fileKey) {
+    public VideoData.DraftVO createDraft(String url, String title, String fileKey) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         UserData.AuthDto authDto = (UserData.AuthDto) authentication.getPrincipal();
         Video video = new Video();
@@ -40,16 +53,132 @@ public class VideoServiceImpl extends ServiceImpl<VideoMapper, Video> implements
         video.setVisible(VideoEnums.Visible.PUBLIC);
         video.setState(VideoEnums.State.DRAFT);
         // 获取视频元数据
-        VideoData.VideoMeta videoMeta = ffmpegClient.analyzeVideo(url);
-        video.setDuration(videoMeta.getDuration());
+        VideoData.Meta meta = ffmpegClient.analyzeVideo(url);
+        video.setDuration(meta.getDuration());
         // 获取视频封面
-        String localCoverPath = "D:/000/pictures/cover.jpg";
+        String localCoverPath = "D:/000/pictures/cover.jpg"; // todo 换个体面一点的方式
         ffmpegClient.generateCover(url, localCoverPath);
         String coverUrl = uploadService.upload(authDto, new File(localCoverPath), UploadEnums.FileUploadTypeEnum.COVER, fileKey);
         video.setCoverUrl(coverUrl);
 
         save(video);
-        return video;
+        VideoData.DraftVO vo = new VideoData.DraftVO();
+        BeanUtil.copyProperties(video, vo, true);
+        return vo;
+    }
+
+    @Override
+    public Page<VideoData.CardVO> QueryCardByPage(VideoData.Query query) {
+        // 1. 固定条件
+        query.setVisible(VideoEnums.Visible.PUBLIC); // 只获取公开的视频
+        query.setState(VideoEnums.State.APPROVED); // 只获取通过的视频
+        // 2. 分页查 video
+        Page<Video> page = getPageByQuery(new Page<>(query.getPage(), query.getSize()), query);
+        if (page.getRecords().isEmpty()) {
+            return new Page<>(page.getCurrent(), page.getSize(), page.getTotal());
+        }
+        // 3. 批量收集 uid / videoId
+        List<Video> videos = page.getRecords();
+        Set<Long> userIds = videos.stream()
+                .map(Video::getUid)
+                .collect(Collectors.toSet());
+        Set<Long> videoIds = videos.stream()
+                .map(Video::getId)
+                .collect(Collectors.toSet());
+        // 4. 批量查询用户简略信息
+        Map<Long, UserData.BriefVO> userMap = userService.getBriefMapByIds(userIds);
+        // 5. 批量查询视频统计（当前可空实现 / mock）
+        Map<Long, VideoData.StatVO> statMap = getVideoStatMap(videoIds);
+        // 6. 组装 CardVO
+        List<VideoData.CardVO> records = videos.stream().map(video -> {
+            VideoData.CardVO vo = new VideoData.CardVO();
+            BeanUtil.copyProperties(video,vo,true);
+            vo.setOwner(userMap.get(video.getUid()));
+            vo.setStat(statMap.get(video.getId()));
+            return vo;
+        }).toList();
+
+        // 7. 返回 Page<VO>
+        Page<VideoData.CardVO> result = new Page<>();
+        result.setCurrent(page.getCurrent());
+        result.setSize(page.getSize());
+        result.setTotal(page.getTotal());
+        result.setRecords(records);
+
+        return result;
+    }
+
+    private Map<Long, VideoData.StatVO> getVideoStatMap(Set<Long> videoIds) {
+        if(videoIds.isEmpty()){
+            return Collections.emptyMap();
+        }
+        // todo 查库获取视频统计数据
+        return videoIds.stream().collect(Collectors.toMap(
+                vid -> vid, this::statistics
+                ));
+    }
+
+    @Override
+    public VideoData.DetailVO getDetailById(Long id) {
+        Video video = getById(id);
+        if (video == null) {
+            throw new RuntimeException("视频不存在");
+        }
+        log.info("video state:{}", video.getState());
+        checkPermission(video);
+
+        VideoData.DetailVO detailVO = new VideoData.DetailVO();
+        BeanUtil.copyProperties(video, detailVO, true);
+        User owner = userService.getById(video.getUid());
+        // 作者信息卡片
+        UserData.CardVO ownerCardVO = userService.buildCard(owner.getId());
+        detailVO.setOwner(ownerCardVO);
+        // 视频统计信息
+        VideoData.StatVO statVO = statistics(video.getId());
+        detailVO.setStatVO(statVO);
+        return detailVO;
+    }
+
+    private VideoData.StatVO statistics(Long id) {
+        // todo Redis + 定时落库
+        VideoData.StatVO statVO = new VideoData.StatVO();
+        statVO.setCoin(0L);
+        statVO.setDanmaku(0L);
+        statVO.setFavorite(0L);
+        statVO.setLike(0L);
+        statVO.setPlay(0L);
+        statVO.setShare(0L);
+        return statVO;
+    }
+    /** 校验权限 */
+    private void checkPermission(Video video) {
+        boolean isOwnerOrAdmin = auth.isSelfOrAdmin(video.getUid());
+        switch (video.getState()) {
+            case APPROVED -> {
+                // 对于已审核通过的视频，如果是私有且当前用户不是作者或管理员，则无访问权限
+                if (video.getVisible() == VideoEnums.Visible.PRIVATE && !isOwnerOrAdmin) {
+                    throw new RuntimeException("无访问权限");
+                }
+            }
+            case DRAFT, REVIEWING -> {
+                // 对于草稿和审核中视频，只有作者或管理员才能访问
+                if (!isOwnerOrAdmin) {
+                    throw new RuntimeException("无访问权限");
+                }
+            }
+            case VIOLATION_DELETE -> {
+                // 对于违规删除的视频，只有作者或管理员才能访问
+                if (!isOwnerOrAdmin) {
+                    throw new RuntimeException("视频已被删除");
+                }
+            }
+            default -> {
+                // 其他未知状态，为了安全起见，只允许作者和管理员访问
+                if (!isOwnerOrAdmin) {
+                    throw new RuntimeException("视频状态异常");
+                }
+            }
+        }
     }
 
     @Override

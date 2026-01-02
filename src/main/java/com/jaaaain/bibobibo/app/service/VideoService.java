@@ -7,5 +7,9 @@ import com.jaaaain.bibobibo.dal.entity.Video;
 
 public interface VideoService extends IService<Video> {
     Page<Video> getPageByQuery(Page<Video> page, VideoData.Query query);
-    Video createDraft(String url, String title, String fileKey);
+    VideoData.DraftVO createDraft(String url, String title, String fileKey);
+
+    VideoData.DetailVO getDetailById(Long id);
+
+    Page<VideoData.CardVO> QueryCardByPage(VideoData.Query query);
 }

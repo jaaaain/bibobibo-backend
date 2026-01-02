@@ -15,6 +15,12 @@ import cn.hutool.core.util.RandomUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 @Slf4j
 @Service
 public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements UserService {
@@ -62,6 +68,49 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     public User getByUsername(String username) {
         return userMapper.selectOne(Wrappers.lambdaQuery(User.class)
                 .eq(User::getUsername, username));
+    }
+    /** 构建卡片 */
+    @Override
+    public UserData.CardVO buildCard(Long uid) {
+        User user = getById(uid);
+        if (user == null) {
+            throw new RuntimeException("用户不存在");
+        }
+        UserData.CardVO card = new UserData.CardVO();
+        BeanUtil.copyProperties(user, card);
+        card.setStat(statistics(uid));
+        return card;
+    }
+
+    /** uid -> briefVO 映射 */
+    @Override
+    public Map<Long, UserData.BriefVO> getBriefMapByIds(Set<Long> userIds) {
+        if (userIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+
+        List<User> users = listByIds(userIds);
+
+        return users.stream().collect(Collectors.toMap(
+                User::getId,
+                user -> {
+                    UserData.BriefVO vo = new UserData.BriefVO();
+                    BeanUtil.copyProperties(user,vo,true);
+                    return vo;
+                }
+        ));
+    }
+
+    @Override
+    public UserData.StatVO statistics(Long uid) {
+        // todo Redis + 定时落库
+        UserData.StatVO statVO = new UserData.StatVO();
+        statVO.setFans(0L);
+        statVO.setFollows(0L);
+        statVO.setLikes(0L);
+        statVO.setPlays(0L);
+        statVO.setVideos(0L);
+        return statVO;
     }
 
     @Override
