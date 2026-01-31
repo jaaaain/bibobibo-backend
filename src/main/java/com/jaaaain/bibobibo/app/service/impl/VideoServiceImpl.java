@@ -7,16 +7,15 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.jaaaain.bibobibo.app.data.UserData;
 import com.jaaaain.bibobibo.app.data.VideoData;
-import com.jaaaain.bibobibo.app.service.UploadService;
 import com.jaaaain.bibobibo.app.service.UserService;
 import com.jaaaain.bibobibo.app.service.VideoService;
-import com.jaaaain.bibobibo.common.enums.UploadEnums;
 import com.jaaaain.bibobibo.common.enums.VideoEnums;
 import com.jaaaain.bibobibo.dal.entity.User;
-import com.jaaaain.bibobibo.infrastructure.FfmpegClient;
 import com.jaaaain.bibobibo.dal.entity.Video;
 import com.jaaaain.bibobibo.dal.mapper.VideoMapper;
-import com.jaaaain.bibobibo.security.auth.AuthContext;
+import com.jaaaain.bibobibo.middleware.mq.message.VideoProgressMessage;
+import com.jaaaain.bibobibo.middleware.mq.producer.VideoProgressProducer;
+import com.jaaaain.bibobibo.security.auth.AuthHelper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
@@ -24,7 +23,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
-import java.io.File;
+import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -37,34 +36,49 @@ import java.util.stream.Collectors;
 public class VideoServiceImpl extends ServiceImpl<VideoMapper, Video> implements VideoService {
 
     private final VideoMapper videoMapper;
-    private final FfmpegClient ffmpegClient;
-    private final UploadService uploadService;
     private final UserService userService;
-    private final AuthContext auth;
+    private final VideoProgressProducer videoProgressProducer;
 
     @Override
-    public VideoData.DraftVO createDraft(String url, String title, String fileKey) {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        UserData.AuthDto authDto = (UserData.AuthDto) authentication.getPrincipal();
+    public VideoData.DraftVO createDraft(String url, String title) {
         Video video = new Video();
+        UserData.AuthDto authDto = AuthHelper.getCurrent();
         video.setUid(authDto.getId());
         video.setTitle(title);
         video.setVideoUrl(url);
         video.setVisible(VideoEnums.Visible.PUBLIC);
         video.setState(VideoEnums.State.DRAFT);
-        // 获取视频元数据
-        VideoData.Meta meta = ffmpegClient.analyzeVideo(url);
-        video.setDuration(meta.getDuration());
-        // 获取视频封面
-        String localCoverPath = "D:/000/pictures/cover.jpg"; // todo 换个体面一点的方式
-        ffmpegClient.generateCover(url, localCoverPath);
-        String coverUrl = uploadService.upload(authDto, new File(localCoverPath), UploadEnums.FileUploadTypeEnum.COVER, fileKey);
-        video.setCoverUrl(coverUrl);
 
         save(video);
         VideoData.DraftVO vo = new VideoData.DraftVO();
         BeanUtil.copyProperties(video, vo, true);
         return vo;
+    }
+    public void publish(Video video) {
+        // 判断状态
+        switch (video.getState()){
+            case DRAFT:
+                break;
+            case REVIEWING:
+                throw new RuntimeException("视频正在审核中");
+            case APPROVED:
+                System.out.println("视频已发布1");
+                log.debug("视频已发布2");
+                throw new RuntimeException("视频已发布3");
+            case VIOLATION_DELETE:
+                throw new RuntimeException("视频违规被删除");
+        }
+
+        video.setState(VideoEnums.State.REVIEWING); // 在消息队列中进行后续操作并送给阿里云审核
+        video.setReleaseTime(LocalDateTime.now());
+        updateById(video);
+
+        // 发送消息,异步处理
+        VideoProgressMessage msg = new VideoProgressMessage(video.getId());
+        if(video.getCoverUrl()!=null){
+            msg.setNeedCover(false);
+        }
+        videoProgressProducer.send(msg);
     }
 
     @Override
@@ -106,6 +120,22 @@ public class VideoServiceImpl extends ServiceImpl<VideoMapper, Video> implements
         result.setRecords(records);
 
         return result;
+    }
+
+    @Override
+    public VideoData.DraftVO getDraftById(Long id) {
+        Video video = getById(id);
+        if(video == null){
+            throw new RuntimeException("视频不存在");
+        }
+        // 校验该视频是否属于当前用户
+        UserData.AuthDto authDto = AuthHelper.getCurrent();
+        if(!video.getUid().equals(authDto.getId())){
+            throw new RuntimeException("无权限");
+        }
+        VideoData.DraftVO vo = new VideoData.DraftVO();
+        BeanUtil.copyProperties(video, vo, true);
+        return vo;
     }
 
     private Map<Long, VideoData.StatVO> getVideoStatMap(Set<Long> videoIds) {
@@ -152,7 +182,7 @@ public class VideoServiceImpl extends ServiceImpl<VideoMapper, Video> implements
     }
     /** 校验权限 */
     private void checkPermission(Video video) {
-        boolean isOwnerOrAdmin = auth.isSelfOrAdmin(video.getUid());
+        boolean isOwnerOrAdmin = AuthHelper.isSelfOrAdmin(video.getUid());
         switch (video.getState()) {
             case APPROVED -> {
                 // 对于已审核通过的视频，如果是私有且当前用户不是作者或管理员，则无访问权限

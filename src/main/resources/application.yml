@@ -18,10 +18,16 @@ spring:
       database: 0
       password:
       timeout: 5000
+  rabbitmq:
+    host: 127.0.0.1
+    port: 5672
+    username: guest
+    password: guest
   security:
     user:
       name: admin
       password: 1234
+
 
 mybatis-plus:
   # 全局配置
@@ -46,15 +52,6 @@ oss:
   idleTimeout: 10000 # ossClient实例维持的空闲时间，单位毫秒，超过会自动关闭释放资源
   maxSize: 30 # 上传文件最大值 MB
 
-
-directory:
-  # 投稿视频存储目录
-  video: public/video/
-  # 分片存储目录
-  chunk: public/chunk/
-  # 投稿封面存储目录
-  cover: public/img/cover/
-
 springdoc:
   swagger-ui:
     path: /swagger-ui.html
@@ -70,11 +67,14 @@ springdoc:
 ffmpeg:
   ffmpeg-path: ${FFMPEG_PATH}
   ffprobe-path: ${FFPROBE_PATH}
+  local-cover-path: D:/000/pictures/
   
 logging:
   level:
-    # Mapper所在包路径（如果想单独设置个别的包或者设置多个包也是可以的）
-    com.jaaaain.bibobibo.app.mapper: debug
+    com.jaaaain.bibobibo.app: debug
+  charset:
+    console: UTF-8
+    file: UTF-8
 
 server:
   servlet:

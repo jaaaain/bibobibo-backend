@@ -13,8 +13,11 @@ import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.util.*;
@@ -83,7 +86,7 @@ public class OSSClient {
      * 取消分片上传
      */
     public void abortMultipart(File file, UploadEnums.FileUploadTypeEnum type, String uploadId) {
-        String path = getPath(type, file.getName(), null);
+        String path = getPath(type, file.getName());
         client.abortMultipartUpload(new AbortMultipartUploadRequest(ossConfig.getBucket(), path, uploadId));
     }
 
@@ -98,16 +101,12 @@ public class OSSClient {
      * 获取上传文件的 path（格式：/path/UUID.ext）
      * @param type   文件类型（用于获取文件存储路径）
      * @param fileName 文件名称（用于提取后缀）
-     * @param fileKey 文件Key（用于获取占位符）
      */
-    public String getPath(UploadEnums.FileUploadTypeEnum type, String fileName, String fileKey) {
-        // fileKey/uuid处理
+    public String getPath(UploadEnums.FileUploadTypeEnum type, String fileName) {
+        // uuid处理
         String uuid = UUID.randomUUID().toString().replace("-", "");
         // 路径处理
         String path = StrUtil.blankToDefault(type.path, UploadEnums.FileUploadTypeEnum.FILE.path);
-        if (path.contains("%s")) {
-            path = String.format(path, fileKey != null ? fileKey : uuid); // video/fileKey/uuid.ext；video/fileKey/cover/uuid.ext
-        }
         // 后缀处理（文件名后缀）
         String suffix = FileUtil.getSuffix(fileName);
         if (StringUtils.isBlank(suffix)) {
@@ -121,38 +120,36 @@ public class OSSClient {
     /**
      * 上传文件基础方法
      * @param path         文件path
-     * @param inputStream 输入流
+     * @param file         前端上传的文件
      */
-    public String putFile(String path, InputStream inputStream) {
-        if (inputStream == null) {
-            throw new RuntimeException("文件不能为空");
-        }
-
-        // 上传文件最大值 MB->bytes
-        long maxSize = ossConfig.getMaxSize() * 1024 * 1024;
-
-        // 计算inputStream大小
-        long size;
-        try {
-            size = inputStream.available();
-        } catch (Exception e) {
-            throw new RuntimeException("无法获取文件大小");
-        }
-
-        if (size <= 0 || size > maxSize) {
-            throw new RuntimeException("请检查文件大小");
-        }
-
-        try {
-            log.info("开始上传文件，path: {}, size: {}", path, size);
-            PutObjectRequest request = new PutObjectRequest(ossConfig.getBucket(), path, inputStream);
-            client.putObject(request);
-            return getUrl(path);
-        } catch (Exception e) {
-            log.error("文件上传失败: {}", e.getMessage(), e);
-            throw new ApiException("文件上传失败：" + e.getMessage());
+    public String putFile(String path, MultipartFile file) {
+        try(InputStream inputStream = file.getInputStream()){
+            return putFileInternal(path, inputStream, file.getSize());
+        } catch (IOException e){
+            log.error("文件上传失败", e);
+            throw new ApiException("文件上传失败");
         }
     }
+    public String putFile(String path, File file) {
+        try(InputStream inputStream = new FileInputStream(file)) {
+            return putFileInternal(path, inputStream, file.length());
+        } catch (IOException e) {
+            log.error("文件上传失败", e);
+            throw new ApiException("文件上传失败");
+        }
+    }
+    private String putFileInternal(String path, InputStream inputStream, long size) {
+        long maxSize = ossConfig.getMaxSize() * 1024 * 1024;
+
+        if (size <= 0 || size > maxSize) {
+            throw new ApiException("请检查文件大小");
+        }
+
+        log.info("开始上传文件，path: {}, size: {}", path, size);
+        client.putObject(new PutObjectRequest(ossConfig.getBucket(), path, inputStream));
+        return getUrl(path);
+    }
+
 
 
     /**

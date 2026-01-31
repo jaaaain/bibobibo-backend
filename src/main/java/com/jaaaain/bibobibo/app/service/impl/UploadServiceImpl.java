@@ -1,20 +1,18 @@
 package com.jaaaain.bibobibo.app.service.impl;
 
 import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.lang.UUID;
 import cn.hutool.core.util.StrUtil;
 import com.aliyun.oss.model.*;
 import com.jaaaain.bibobibo.app.data.UploadData;
-import com.jaaaain.bibobibo.app.data.UserData;
 import com.jaaaain.bibobibo.app.service.UploadService;
-import com.jaaaain.bibobibo.app.service.VideoService;
 import com.jaaaain.bibobibo.common.enums.UploadEnums;
-import com.jaaaain.bibobibo.common.enums.VideoEnums;
 import com.jaaaain.bibobibo.infrastructure.OSSClient;
-import com.jaaaain.bibobibo.dal.entity.Video;
 import com.jaaaain.bibobibo.middleware.redis.UploadRedisRepo;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -71,8 +69,7 @@ public class UploadServiceImpl implements UploadService {
      * 新建上传会话
      */
     private UploadData.InitUploadVO createNewUpload(UploadData.InitUploadDto req) {
-        // 1. 获取文件路径
-        String path = ossClient.getPath(req.getType(), req.getFileName(), null);
+        String path = ossClient.getPath(req.getType(), req.getFileName());
         // 2. 初始化分片上传
         InitiateMultipartUploadResult initResult = ossClient.initMultipart(path);
         String uploadId = initResult.getUploadId();
@@ -101,29 +98,33 @@ public class UploadServiceImpl implements UploadService {
     /**
      * 上传任务完成，校验已上传分片，合并分片
      */
-    public UploadData.FinishVO finish(UserData.AuthDto authDto,String md5) {
+    public UploadData.UploadResultVO finish(String md5) {
         // 从Redis获取完整文件存储文件路径
         UploadData.UploadSession session = redisRepo.getUploadSession(md5);
         if (session == null) {
             throw new IllegalArgumentException("上传会话不存在");
         }
-        String path = session.getPath();
-        String uploadId = session.getUploadId();
         // 合并分片
-        CompleteMultipartUploadResult completeRes = ossClient.completeMultipart(path, uploadId);
+        CompleteMultipartUploadResult completeRes = ossClient.completeMultipart(session.getPath(), session.getUploadId());
         session.setCompleted(true);
         redisRepo.setUploadSession(md5, session);
 
         // Redis 缓存文件md5
-        return new UploadData.FinishVO(completeRes.getETag(), path);// todo 返回video
+        return new UploadData.UploadResultVO(completeRes.getETag(), session.getPath());
     }
 
     /**
      * 上传文件
      */
-    public String upload(UserData.AuthDto authDto, File file, UploadEnums.FileUploadTypeEnum type, String fileKey) {
-        String path = ossClient.getPath(type, file.getName(), fileKey);
-        return ossClient.putFile(path, FileUtil.getInputStream(file));
+    public UploadData.UploadResultVO upload(MultipartFile file, UploadEnums.FileUploadTypeEnum type) {
+        String path = ossClient.getPath(type, file.getName());
+        path = ossClient.putFile(path, file);
+        return new UploadData.UploadResultVO(null, path);
+    }
+    public UploadData.UploadResultVO upload(File file, UploadEnums.FileUploadTypeEnum type) {
+        String path = ossClient.getPath(type, file.getName());
+        path = ossClient.putFile(path, file);
+        return new UploadData.UploadResultVO(null, path);
     }
 
     /**

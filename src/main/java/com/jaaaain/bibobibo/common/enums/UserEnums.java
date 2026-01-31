@@ -6,12 +6,13 @@ public class UserEnums {
 
     /** 用户角色 */
     public enum Role {
-        USER(0),       // 普通用户
-        ADMIN(1);      // 管理员
+        USER(0, "USER"),       // 普通用户
+        ADMIN(1, "ADMIN");      // 管理员
 
         @EnumValue
         public final int value;
-        Role(int value) { this.value = value; }
+        public final String name;
+        Role(int value, String name) { this.value = value; this.name = name; }
     }
 
     /** 性别 */

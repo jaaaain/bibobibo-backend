@@ -1,5 +1,6 @@
 package com.jaaaain.bibobibo.infrastructure;
 
+import cn.hutool.core.lang.UUID;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -23,6 +24,9 @@ public class FfmpegClient {
 
     @Value("${ffmpeg.ffprobe-path}")
     private String ffprobePath;
+
+    @Value("${ffmpeg.local-cover-path}")
+    private String localCoverPath;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -108,10 +112,11 @@ public class FfmpegClient {
     /**
      * 生成视频封面（提取内嵌封面或截取视频帧）
      */
-    public String generateCover(String videoUrl, String outputImage) {
+    public String generateCover(String videoUrl) {
+        String uuid = UUID.randomUUID().toString();
+        String outputImage = localCoverPath + uuid + ".jpg";
         try {
             boolean hasAttachedPic = hasAttachedPic(videoUrl);
-
             if (hasAttachedPic) {
                 log.info("提取内嵌封面，videoUrl: {}, outputImage: {}", videoUrl, outputImage);
                 extractAttachedPic(videoUrl, outputImage);

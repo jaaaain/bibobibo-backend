@@ -7,16 +7,15 @@ import com.jaaaain.bibobibo.app.data.VideoData;
 import com.jaaaain.bibobibo.app.service.VideoService;
 import com.jaaaain.bibobibo.common.PageResult;
 import com.jaaaain.bibobibo.common.Result;
-import com.jaaaain.bibobibo.common.enums.VideoEnums;
 import com.jaaaain.bibobibo.dal.entity.Video;
+import com.jaaaain.bibobibo.security.auth.AuthHelper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-
-import java.time.LocalDateTime;
 
 @RestController
 @RequestMapping("/video")
@@ -28,53 +27,43 @@ public class VideoController {
 
     @PostMapping("/create-draft")
     @Operation(summary = "创建视频草稿", description = "创建视频草稿记录")
-    public Result<VideoData.DraftVO> createDraft(@RequestParam String url, @RequestParam String title, @RequestParam String fileKey){
-        return Result.success(videoService.createDraft(url, title, fileKey));
+    public Result<VideoData.DraftVO> createDraft(@RequestParam String url, @RequestParam String title){
+        return Result.success(videoService.createDraft(url, title));
+    }
+
+    @GetMapping("/draft/{id}")
+    @Operation(summary = "获取视频草稿", description = "根据ID获取视频草稿")
+    public Result<VideoData.DraftVO> getDraft(@PathVariable Long id){
+        return Result.success(videoService.getDraftById(id));
     }
 
     @PostMapping("/update")
     @Operation(summary = "更新视频信息", description = "更新视频的基本信息")
-    public Result<Void> update(@AuthenticationPrincipal UserData.AuthDto authDto ,@RequestBody VideoData.UpdateDto updateDto){
+    public Result<Void> update(@RequestBody @Valid VideoData.UpdateDto updateDto){
         Video video = videoService.getById(updateDto.getId());
         if(video == null){
             return Result.failed("视频不存在");
         }
         // 校验该视频是否属于当前用户
-        if(!video.getUid().equals(authDto.getId())){// todo 有没有其他好办法？
+        if(!AuthHelper.isSelf(video.getUid())){
             return Result.failed("无权限");
         }
-        // 仅复制非null字段
-        BeanUtil.copyProperties(updateDto, video, true);
+        BeanUtil.copyProperties(updateDto, video);
         videoService.updateById(video);
         return Result.success();
     }
 
     @PostMapping("/publish/{id}")
     @Operation(summary = "发布视频", description = "提交视频审核")
-    public Result<Void> publish(@AuthenticationPrincipal UserData.AuthDto authDto ,@PathVariable Long id){
+    public Result<Void> publish(@PathVariable Long id){
         Video video = videoService.getById(id);
         if(video == null){
             return Result.failed("视频不存在");
         }
-        // 校验该视频是否属于当前用户
-        if(!video.getUid().equals(authDto.getId())){
+        if(!AuthHelper.isSelfOrAdmin(video.getUid())){
             return Result.failed("无权限");
         }
-        // 判断状态
-        switch (video.getState()){
-            case DRAFT:
-                break;
-            case REVIEWING:
-                return Result.failed("视频正在审核中");
-            case APPROVED:
-                return Result.failed("视频已发布");
-            case VIOLATION_DELETE:
-                return Result.failed("视频违规被删除");
-        }
-        video.setState(VideoEnums.State.REVIEWING);
-        video.setState(VideoEnums.State.APPROVED); // todo 送给阿里云审核，后续改为在消息队列中更新审核状态
-        video.setReleaseTime(LocalDateTime.now());
-        videoService.updateById(video);
+        videoService.publish(video);
         return Result.success();
     }
 

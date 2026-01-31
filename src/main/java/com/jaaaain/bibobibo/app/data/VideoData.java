@@ -1,6 +1,7 @@
 package com.jaaaain.bibobibo.app.data;
 
 import com.jaaaain.bibobibo.common.enums.VideoEnums;
+import jakarta.validation.constraints.NotBlank;
 import lombok.*;
 
 import java.time.LocalDateTime;
@@ -55,7 +56,7 @@ public class VideoData {
     /** 视频预览页卡片 */
     @Data
     public static class CardVO {
-        private String id; // 视频ID
+        private Long id; // 视频ID
         private String title; // 视频标题
         private String coverUrl; // 封面url
         private Double duration; // 视频时长(秒)
@@ -67,7 +68,7 @@ public class VideoData {
     /** 视频播放页详情 */
     @Data
     public static class DetailVO {
-        private String id; // 视频ID
+        private Long id; // 视频ID
         private String title; // 视频标题
         private String introduction; // 描述
         private String coverUrl; // 封面url
@@ -95,7 +96,7 @@ public class VideoData {
     /** 视频草稿信息 */
     @Data
     public static class DraftVO {
-        private String id; // 视频ID
+        private Long id; // 视频ID
         private String title; // 视频标题
         private String introduction; // 视频简介
         private String coverUrl; // 视频封面url
@@ -110,8 +111,10 @@ public class VideoData {
     @Data
     public static class UpdateDto {
         private Long id;
+        @NotBlank
         private String title; // 视频标题
         private String introduction; // 视频简介
+        @NotBlank
         private String coverUrl; // 视频封面url
         private String tags; // 标签
         private VideoEnums.Type type; // 类型：-1 未知；0自制；1转载

@@ -1,12 +1,16 @@
 package com.jaaaain.bibobibo.app.data;
 
 import com.jaaaain.bibobibo.common.enums.UploadEnums;
+import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.File;
 import java.util.List;
-import java.util.Set;
 
 @Data
 public class UploadData {
@@ -27,7 +31,7 @@ public class UploadData {
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
-    public static class FinishVO {
+    public static class UploadResultVO {
         private String etag;
         private String path;
     }
@@ -40,6 +44,15 @@ public class UploadData {
         private String fileName;
         private Long fileSize;
         private String fileMd5;
+        private UploadEnums.FileUploadTypeEnum type;
+    }
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class UploadDto {
+        @Schema(description ="上传文件")
+        private MultipartFile file;
+        @Schema(description ="上传文件类型,用于映射文件存储路径")
         private UploadEnums.FileUploadTypeEnum type;
     }
 

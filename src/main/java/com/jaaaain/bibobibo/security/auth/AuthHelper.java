@@ -7,12 +7,17 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
 import java.util.Objects;
+import java.util.Optional;
 
-@Component("auth")
-public class AuthContext {
+public final class AuthHelper {
+
+    public static UserData.AuthDto requireLogin() {
+        return Optional.ofNullable(getCurrentOrNull())
+                .orElseThrow(() -> new RuntimeException("请先登录"));
+    }
 
     /** 获取当前登录用户（可能为 null） */
-    public UserData.AuthDto getCurrentOrNull() {
+    public static UserData.AuthDto getCurrentOrNull() {
         Authentication authentication =
                 SecurityContextHolder.getContext().getAuthentication();
 
@@ -25,10 +30,8 @@ public class AuthContext {
         return (UserData.AuthDto) authentication.getPrincipal();
     }
 
-    /**
-     * 必须登录，否则抛异常
-     */
-    public UserData.AuthDto getCurrent() {
+    /** 必须登录，否则抛异常 */
+    public static UserData.AuthDto getCurrent() {
         UserData.AuthDto auth = getCurrentOrNull();
         if (auth == null) {
             throw new RuntimeException("请先登录");
@@ -36,34 +39,26 @@ public class AuthContext {
         return auth;
     }
 
-    /**
-     * 是否本人（按用户ID）
-     */
-    public boolean isSelf(Long targetUserId) {
+    /** 是否本人（按用户ID） */
+    public static boolean isSelf(Long targetUserId) {
         UserData.AuthDto auth = getCurrentOrNull();
         return auth != null && Objects.equals(auth.getId(), targetUserId);
     }
 
-    /**
-     * 是否本人（按用户名）
-     */
-    public boolean isSelf(String targetUsername) {
+    /** 是否本人（按用户名） */
+    public static boolean isSelf(String targetUsername) {
         UserData.AuthDto auth = getCurrentOrNull();
         return auth != null && Objects.equals(auth.getUsername(), targetUsername);
     }
 
-    /**
-     * 是否管理员
-     */
-    public boolean isAdmin() {
+    /** 是否管理员 */
+    public static boolean isAdmin() {
         UserData.AuthDto auth = getCurrentOrNull();
         return auth != null && auth.getRole() == UserEnums.Role.ADMIN;
     }
 
-    /**
-     * 本人或管理员
-     */
-    public boolean isSelfOrAdmin(Long targetUserId) {
+    /** 本人或管理员 */
+    public static boolean isSelfOrAdmin(Long targetUserId) {
         UserData.AuthDto auth = getCurrentOrNull();
         return auth != null && (isAdmin() || Objects.equals(auth.getId(), targetUserId));
     }
