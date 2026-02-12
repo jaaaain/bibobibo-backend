@@ -1,5 +1,7 @@
 package com.jaaaain.bibobibo.app.data;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import com.jaaaain.bibobibo.common.enums.VideoEnums;
 import jakarta.validation.constraints.NotBlank;
 import lombok.*;
@@ -56,6 +58,7 @@ public class VideoData {
     /** 视频预览页卡片 */
     @Data
     public static class CardVO {
+        @JsonSerialize(using = ToStringSerializer.class)
         private Long id; // 视频ID
         private String title; // 视频标题
         private String coverUrl; // 封面url
@@ -68,6 +71,7 @@ public class VideoData {
     /** 视频播放页详情 */
     @Data
     public static class DetailVO {
+        @JsonSerialize(using = ToStringSerializer.class)
         private Long id; // 视频ID
         private String title; // 视频标题
         private String introduction; // 描述
@@ -96,11 +100,13 @@ public class VideoData {
     /** 视频草稿信息 */
     @Data
     public static class DraftVO {
+        @JsonSerialize(using = ToStringSerializer.class)
         private Long id; // 视频ID
         private String title; // 视频标题
         private String introduction; // 视频简介
         private String coverUrl; // 视频封面url
         private String videoUrl; // 视频url
+        private String fileName; // 视频文件名称
         private String tags; // 视频标签
         private VideoEnums.Type type; // 视频类型：0自制；1转载
         private VideoEnums.Visible visible; // 视频可见范围：0公开；1仅自己
@@ -110,6 +116,7 @@ public class VideoData {
     /** 更新视频信息 */
     @Data
     public static class UpdateDto {
+        @JsonSerialize(using = ToStringSerializer.class)
         private Long id;
         @NotBlank
         private String title; // 视频标题

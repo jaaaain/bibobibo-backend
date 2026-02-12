@@ -46,6 +46,7 @@ public class VideoServiceImpl extends ServiceImpl<VideoMapper, Video> implements
         video.setUid(authDto.getId());
         video.setTitle(title);
         video.setVideoUrl(url);
+        video.setFileName(title);
         video.setVisible(VideoEnums.Visible.PUBLIC);
         video.setState(VideoEnums.State.DRAFT);
 
@@ -79,6 +80,20 @@ public class VideoServiceImpl extends ServiceImpl<VideoMapper, Video> implements
             msg.setNeedCover(false);
         }
         videoProgressProducer.send(msg);
+    }
+
+    @Override
+    public List<VideoData.DraftVO> getMyDraftVideoList() {
+        UserData.AuthDto authDto = AuthHelper.getCurrent();
+        List<Video> videos = list(Wrappers.<Video>lambdaQuery()
+                .eq(Video::getState, VideoEnums.State.DRAFT)
+                .eq(Video::getUid, authDto.getId())
+        );
+        return videos.stream().map(video -> {
+            VideoData.DraftVO vo = new VideoData.DraftVO();
+            BeanUtil.copyProperties(video, vo, true);
+            return vo;
+        }).toList();
     }
 
     @Override

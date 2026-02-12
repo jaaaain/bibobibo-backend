@@ -5,6 +5,8 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import com.jaaaain.bibobibo.app.data.VideoData;
 import com.jaaaain.bibobibo.dal.entity.Video;
 
+import java.util.List;
+
 public interface VideoService extends IService<Video> {
     Page<Video> getPageByQuery(Page<Video> page, VideoData.Query query);
     VideoData.DraftVO createDraft(String url, String title);
@@ -16,4 +18,6 @@ public interface VideoService extends IService<Video> {
     VideoData.DraftVO getDraftById(Long id);
 
     void publish(Video video);
+
+    List<VideoData.DraftVO> getMyDraftVideoList();
 }

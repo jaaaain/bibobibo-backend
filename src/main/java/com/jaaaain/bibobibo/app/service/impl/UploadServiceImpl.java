@@ -42,7 +42,6 @@ public class UploadServiceImpl implements UploadService {
         if (session != null) {
             // 2.1 已完成 → 秒传
             if (session.getCompleted()) {
-                // todo 第一个参数改为枚举
                 return new UploadData.InitUploadVO(UploadEnums.FileUploadStateEnum.COMPLETED, null, 0, 0, null, session.getPath());
             }
             // 2.2 未完成 → 断点续传（前端存已上传的分片信息）
@@ -117,7 +116,7 @@ public class UploadServiceImpl implements UploadService {
      * 上传文件
      */
     public UploadData.UploadResultVO upload(MultipartFile file, UploadEnums.FileUploadTypeEnum type) {
-        String path = ossClient.getPath(type, file.getName());
+        String path = ossClient.getPath(type, file.getOriginalFilename());
         path = ossClient.putFile(path, file);
         return new UploadData.UploadResultVO(null, path);
     }

@@ -25,6 +25,7 @@ public class Video implements Serializable {
     private String introduction; // 视频简介
     private String coverUrl; // 视频封面url
     private String videoUrl; // 视频url
+    private String fileName; // 视频文件名称
     private Double duration; // 视频时长(秒)
     private String tags; // 标签
     private VideoEnums.Type type; // 类型：0自制；1转载

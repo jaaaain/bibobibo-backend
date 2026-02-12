@@ -8,8 +8,8 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
 
 @RestController
 @RequestMapping("/file/upload")
@@ -42,7 +42,9 @@ class FileUploadController {
      */
     @PostMapping("/upload")
     @Operation(summary = "上传文件", description = "上传文件，返回文件路径")
-    public Result<UploadData.UploadResultVO> upload(@RequestBody UploadData.UploadDto uploadDto) {
-        return Result.success(uploadService.upload(uploadDto.getFile(), uploadDto.getType()));
+    public Result<UploadData.UploadResultVO> upload(
+            @RequestParam("file") MultipartFile file,
+            @RequestParam("type") UploadEnums.FileUploadTypeEnum type) {
+        return Result.success(uploadService.upload(file, type));
     }
 }

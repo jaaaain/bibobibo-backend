@@ -22,11 +22,8 @@ import java.util.List;
 public class PlatformController {
     private final VideoService videoService;
     @GetMapping("/my/draft")
-    public Result<List<Video>> getMyDraftVideoList(@AuthenticationPrincipal UserData.AuthDto authDto) {
-        List<Video> videos = videoService.list(Wrappers.<Video>lambdaQuery()
-                .eq(Video::getState, -1) // 只获取草稿的视频
-                .eq(Video::getUid, authDto.getId())
-        );
+    public Result<List<VideoData.DraftVO>> getMyDraftVideoList() {
+        List<VideoData.DraftVO> videos = videoService.getMyDraftVideoList();
         return Result.success(videos);
     }
 }
