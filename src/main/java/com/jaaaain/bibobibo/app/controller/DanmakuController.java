@@ -9,7 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/danmaku")
+@RequestMapping("/dm")
 @RequiredArgsConstructor
 public class DanmakuController {
     private final DanmakuService danmakuService;
@@ -30,8 +30,8 @@ public class DanmakuController {
     }
 
     // 新增
-    @PostMapping
-    public Result<Boolean> add(@RequestBody Danmaku danmaku) {
+    @PostMapping("/post")
+    public Result<Boolean> post(@RequestBody Danmaku danmaku) {
         return Result.success(danmakuService.save(danmaku));
     }
 
