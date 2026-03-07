@@ -68,7 +68,9 @@ public class DanmakuHandler {
     public void broadcast(Long vid, String message, WsSession excludeSession) {
         Set<WsSession> sessions = videoSessionMap.get(vid);
         if (sessions == null) return;
-        sessions.remove(excludeSession);
+        if (excludeSession != null) {
+            sessions.remove(excludeSession);
+        }
         List<WsSession> failedSessions = new ArrayList<>();
         for (WsSession session : sessions) {
             try {

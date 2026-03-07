@@ -44,6 +44,7 @@ public class RedisConfig {
         ObjectMapper mapper = new ObjectMapper();       // 对象类序列化过程中用 ObjectMapper 进行转义
         mapper.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.ANY);
         mapper.activateDefaultTyping(LaissezFaireSubTypeValidator.instance, ObjectMapper.DefaultTyping.NON_FINAL);
+        mapper.enableDefaultTyping(ObjectMapper.DefaultTyping.NON_FINAL); // 启用类型信息
         jackson2JsonRedisSerializer.setObjectMapper(mapper);
         // String的序列化
         StringRedisSerializer stringRedisSerializer = new StringRedisSerializer();

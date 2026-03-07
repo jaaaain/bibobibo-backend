@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.jaaaain.bibobibo.dal.mapper.CommentMapper">
+    <resultMap id="BaseResultMap" type="com.jaaaain.bibobibo.dal.entity.Comment">
+        <id property="id" column="id"/>
+        <result property="vid" column="vid"/>
+        <result property="uid" column="uid"/>
+        <result property="rootId" column="root_id"/>
+        <result property="parentId" column="parent_id"/>
+        <result property="toUid" column="to_uid"/>
+        <result property="content" column="content"/>
+        <result property="likeCount" column="like_count"/>
+        <result property="badCount" column="bad_count"/>
+        <result property="replyCount" column="reply_count"/>
+        <result property="isTop" column="is_top"/>
+        <result property="state" column="state"/>
+        <result property="ipLocation" column="ip_location"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="deleted" column="deleted"/>
+    </resultMap>
+    <select id="getCount" resultType="java.lang.Long">
+        SELECT COUNT(*) FROM comment WHERE vid = #{vid}
+    </select>
+</mapper>

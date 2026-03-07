@@ -4,7 +4,12 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
@@ -34,8 +39,54 @@ public class RedisClient {
         throw new ClassCastException("无法将 " + value.getClass().getName() + " 转换为 " + clazz.getName());
     }
 
+    // 获取所有匹配的键
+    public List<Long> getAllKeys(String keyPrefix){
+        Set<String> keys = redisTemplate.keys(keyPrefix + "*");
+        if (keys == null) {
+            return Collections.emptyList();
+        }
+        return keys.stream()
+                .map(key -> {
+                    // 从 key 中提取 commentId，例如 "comment:like_count:123" -> 123
+                    String commentIdStr = key.substring(key.lastIndexOf(":") + 1);
+                    try {
+                        return Long.parseLong(commentIdStr);
+                    } catch (NumberFormatException e) {
+                        return null;
+                    }
+                })
+                .filter(Objects::nonNull)
+                .toList();
+    }
+
+    // 键递增
+    public Long incr(String key, Integer increment) {
+        return redisTemplate.opsForValue().increment(key, increment);
+    }
+
     // 删除键
     public Boolean delete(String key) {
         return redisTemplate.delete(key);
+    }
+
+    // 添加有序集合元素
+    public void zAdd(String key, Object value, double score) {
+        redisTemplate.opsForZSet().add(key, value.toString(), score);
+    }
+    // 获取有序集合元素
+    public Set<Long> zRange(String key, long start, long end) {
+        Set<Object> rawSet = redisTemplate.opsForZSet().range(key, start, end);
+        if (rawSet == null) {
+            return null;
+        }
+        return rawSet.stream().map(v -> Long.valueOf(v.toString())).collect(Collectors.toSet());
+    }
+    // 有序集合元素递增
+    public void zIncrBy(String key, double increment, Object value) {
+        redisTemplate.opsForZSet().incrementScore(key, value.toString(), increment);
+    }
+    // 有序集合元素删除
+    public void zRemove(String key, Object value) {
+        redisTemplate.opsForZSet().remove(key, value.toString());
     }
 }
