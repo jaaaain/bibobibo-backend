@@ -6,6 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
 import java.util.Date;
 import java.io.Serializable;
 
@@ -18,7 +19,7 @@ import java.io.Serializable;
 @AllArgsConstructor
 @TableName("users")
 public class User implements Serializable {
-    @TableId(type = IdType.ASSIGN_ID)
+    @TableId(type = IdType.AUTO)
     private Long id;// 用户ID
     private String username;// 用户名
     private String nickname;// 昵称
@@ -35,9 +36,9 @@ public class User implements Serializable {
     private UserEnums.Vip vip;// VIP等级：0 普通用户；1 月度VIP；2 年度VIP
     private UserEnums.State state;// 状态：0 正常；1 封禁
     @TableField(fill = FieldFill.INSERT)
-    private Date createTime;// 创建时间
+    private LocalDateTime createTime;// 创建时间
     @TableField(fill = FieldFill.INSERT_UPDATE)
-    private Date updateTime;// 更新时间
+    private LocalDateTime updateTime;// 更新时间
     @TableLogic
     private Integer deleted;// 逻辑删除
 }

@@ -18,7 +18,7 @@ import java.util.Date;
 @AllArgsConstructor
 @TableName("video")
 public class Video implements Serializable {
-    @TableId(type = IdType.ASSIGN_ID)
+    @TableId(type = IdType.AUTO)
     private Long id; // 视频ID
     private Long uid; // 用户ID
     private String title; // 视频标题

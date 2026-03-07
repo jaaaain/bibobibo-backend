@@ -1,44 +1,33 @@
 package com.jaaaain.bibobibo.app.controller;
 
+import com.baomidou.mybatisplus.core.conditions.Wrapper;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.jaaaain.bibobibo.app.service.DanmakuService;
 import com.jaaaain.bibobibo.common.PageResult;
 import com.jaaaain.bibobibo.common.Result;
 import com.jaaaain.bibobibo.dal.entity.Danmaku;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
+@Slf4j
 @RestController
 @RequestMapping("/dm")
 @RequiredArgsConstructor
 public class DanmakuController {
     private final DanmakuService danmakuService;
 
-    // 分页列表
-    @GetMapping("/list")
-    public Result<PageResult<Danmaku>> list(
-            @RequestParam(defaultValue = "1") Integer page,
-            @RequestParam(defaultValue = "10") Integer size) {
-        Page<Danmaku> p = danmakuService.page(new Page<>(page, size));
-        return Result.success(PageResult.of(p.getTotal(), p.getRecords()));
-    }
-
-    // 详情
-    @GetMapping("/{id}")
-    public Result<Danmaku> detail(@PathVariable Long id) {
-        return Result.success(danmakuService.getById(id));
-    }
-
-    // 新增
-    @PostMapping("/post")
-    public Result<Boolean> post(@RequestBody Danmaku danmaku) {
-        return Result.success(danmakuService.save(danmaku));
-    }
-
-    // 修改
-    @PutMapping
-    public Result<Boolean> update(@RequestBody Danmaku danmaku) {
-        return Result.success(danmakuService.updateById(danmaku));
+    // 列表
+    @GetMapping("/list/{vid}")
+    public Result<List<Danmaku>> list(@PathVariable Long vid) {
+        log.info("list vid={}", vid);
+        Wrapper<Danmaku> queryWrapper = Wrappers.lambdaQuery(Danmaku.class).eq(Danmaku::getVid, vid);
+        List<Danmaku> list = danmakuService.list(queryWrapper);
+        return Result.success(list);
     }
 
     // 删除（逻辑删除）

@@ -31,16 +31,12 @@ public class UserController {
             return Result.failed("用户不存在");
         }
         UserData.SelfCardVO selfCardVO = new UserData.SelfCardVO();
-        selfCardVO.setAvatar(user.getAvatar());
-        selfCardVO.setNickname(user.getNickname());
+        BeanUtil.copyProperties(user, selfCardVO);
         // 根据经验值估算等级（假设每级经验差固定为2000）
         int estimatedLevel = Math.min(6, user.getExp() / 2000 + 1);
         // todo 等级所需经验上下限；暂只显示等级
-        selfCardVO.setExp(user.getExp());
         selfCardVO.setLevel(estimatedLevel);
-        selfCardVO.setVip(user.getVip()); // todo VIP到期时间
-        selfCardVO.setCoin(user.getCoin());
-        selfCardVO.setState(user.getState());
+        // todo VIP到期时间
 
         return Result.success(selfCardVO);
     }

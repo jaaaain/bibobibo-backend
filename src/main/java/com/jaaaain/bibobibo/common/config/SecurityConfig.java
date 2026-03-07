@@ -30,7 +30,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**",
                                 "/user/login", "/user/register",
-                                "/video/**").permitAll()
+                                "/video/**", "/dm/**", "/comment/**", "/user/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 // 不要使用默认登录逻辑

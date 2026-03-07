@@ -34,6 +34,7 @@ public class NettyWebSocketHandler extends SimpleChannelInboundHandler<TextWebSo
         if (req == null || req.getType() == null) {
             return;
         }
+        log.info("receive message, type={}, data={}", req.getType(), req.getData());
 
         switch (req.getType()) {
 
@@ -47,7 +48,7 @@ public class NettyWebSocketHandler extends SimpleChannelInboundHandler<TextWebSo
 
             case "danmaku":
                 Danmaku danmaku = JSONUtil.toBean(JSONUtil.toJsonStr(req.getData()), Danmaku.class);
-                danmakuHandler.sendDanmaku(req.getVideoId(), danmaku);
+                danmakuHandler.sendDanmaku(req.getVideoId(), danmaku, session);
                 break;
 
             case "heartbeat":

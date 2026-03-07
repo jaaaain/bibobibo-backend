@@ -29,6 +29,7 @@ public class DanmakuHandler {
      * 用户加入视频观看
      */
     public void joinVideo(Long vid, WsSession session) {
+        log.info("join video, vid={}, session={}", vid, session);
         videoSessionMap.computeIfAbsent(vid, k -> ConcurrentHashMap.newKeySet()).add(session);
         sessionVideoMap.put(session.getSessionId(), vid);
         broadcastViewerCount(vid);
@@ -53,18 +54,21 @@ public class DanmakuHandler {
     /**
      * 发送弹幕
      */
-    public void sendDanmaku(Long vid, Danmaku danmaku) {
+    public void sendDanmaku(Long vid, Danmaku danmaku, WsSession session) {
+        log.info("send danmaku, vid={}, danmaku={}, session={}", vid, danmaku, session);
         danmaku.setVid(vid);
         danmakuMapper.insert(danmaku);// todo 异步存储
-        broadcast(vid, JSONUtil.toJsonStr(danmaku));
+        String msg = "{\"type\":\"danmaku\",\"data\":" + JSONUtil.toJsonStr(danmaku) + "}";
+        broadcast(vid, msg, session);
     }
 
     /**
      * 向指定视频的所有观看者广播消息
      */
-    public void broadcast(Long vid, String message) {
+    public void broadcast(Long vid, String message, WsSession excludeSession) {
         Set<WsSession> sessions = videoSessionMap.get(vid);
         if (sessions == null) return;
+        sessions.remove(excludeSession);
         List<WsSession> failedSessions = new ArrayList<>();
         for (WsSession session : sessions) {
             try {
@@ -90,7 +94,8 @@ public class DanmakuHandler {
      */
     private void broadcastViewerCount(Long vid) {
         int count = getViewerCount(vid);
-        String msg = "{\"type\":\"viewerCount\",\"count\":" + count + "}";
-        broadcast(vid, msg);
+        log.info("broadcast viewer count, vid={}, count={}", vid, count);
+        String msg = "{\"type\":\"viewerCount\",\"data\":" + count + "}";
+        broadcast(vid, msg, null);
     }
 }
