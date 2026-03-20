@@ -74,13 +74,23 @@ public class RedisClient {
         redisTemplate.opsForZSet().add(key, value.toString(), score);
     }
     // 获取有序集合元素
-    public Set<Long> zRange(String key, long start, long end) {
-        Set<Object> rawSet = redisTemplate.opsForZSet().range(key, start, end);
+    public Set<Long> zRevRange(String key, long start, long end) {
+        Set<Object> rawSet = redisTemplate.opsForZSet().reverseRange(key, start, end);
         if (rawSet == null) {
             return null;
         }
         return rawSet.stream().map(v -> Long.valueOf(v.toString())).collect(Collectors.toSet());
     }
+    // cursor游标分页
+    public Set<Long> zRevRangeByScore(String key, double min, double max, long size) {
+        Set<Object> rawSet = redisTemplate.opsForZSet().reverseRangeByScore(key, min, max, 0, size);
+        if (rawSet == null) {
+            return null;
+        }
+        return rawSet.stream().map(v -> Long.valueOf(v.toString())).collect(Collectors.toSet());
+    }
+
+
     // 有序集合元素递增
     public void zIncrBy(String key, double increment, Object value) {
         redisTemplate.opsForZSet().incrementScore(key, value.toString(), increment);
@@ -88,5 +98,9 @@ public class RedisClient {
     // 有序集合元素删除
     public void zRemove(String key, Object value) {
         redisTemplate.opsForZSet().remove(key, value.toString());
+    }
+
+    public Double zScore(String key, Long id) {
+        return redisTemplate.opsForZSet().score(key, id.toString());
     }
 }

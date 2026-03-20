@@ -11,12 +11,7 @@ import java.util.List;
 @Data
 public class CommentData {
     // ===Query===
-    @Data
-    public static class Query extends BaseQuery {
-        private Long vid;                   // 视频ID
-        private Long rootId;                // 根评论ID（查询子评论时使用）
-        private String sortType;            // 排序类型：hot-热度，time-时间
-    }
+
     // ===VO===
     @Data
     public static class CommentVO {

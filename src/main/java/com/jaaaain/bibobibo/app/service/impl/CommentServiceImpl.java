@@ -21,10 +21,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -37,29 +38,52 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
     private final UserLikeService userLikeService;
     private final VideoService videoService;
     @Override
-    public List<CommentData.CommentVO> getRootCommentsByFeed(Long vid, String sortType, Integer page, Integer size) {
+    public List<CommentData.CommentVO> getRootCommentsByFeed(Long vid, String sortType, String cursor, Integer size) {
         // 1. 查询置顶评论 (isTop=1, rootId=0)
         List<Comment> topComments = new ArrayList<>();
-        if(page == null || page <= 0){
+        List<Comment> normalComments = new ArrayList<>();
+        boolean firstPage = cursor == null || cursor.isEmpty();
+        if(firstPage){ // 如果未提供 cursor，则返回第一页，需要获取置顶评论
             topComments = this.getTopComment(vid);
         }
 
+        Double cursorScore = firstPage ? null : Double.parseDouble(cursor);
         // 2. 查询普通根评论 (isTop=0, rootId=0) 并排序
-        Set<Long> commentIds = commentRedisRepo.getCommentFeed(vid, sortType, page * size, (page + 1) * size);
-        LambdaQueryWrapper<Comment> normalWrapper = Wrappers.lambdaQuery();
-        normalWrapper.in(Comment::getId, commentIds)
-                .eq(Comment::getIsTop, 0);
-        List<Comment> normalComments = this.list(normalWrapper);
+        Set<Long> commentIds = commentRedisRepo.getCommentByCursor(vid, sortType, cursorScore, size);
+        if(!commentIds.isEmpty()){
+            LambdaQueryWrapper<Comment> normalWrapper = Wrappers.lambdaQuery();
+            normalWrapper.in(Comment::getId, commentIds)
+                    .eq(Comment::getIsTop, 0)
+                    .eq(Comment::getRootId, 0)
+                    .eq(Comment::getVid, vid);
+            normalComments = this.list(normalWrapper);
+        } else if (firstPage) { // redis中没找到，且加载的是第一页时，从DB加载缓存
+            loadFromDBAndRebuildCache(vid); // todo 异步加载缓存
+        }
 
         // 合并列表：置顶在前，普通在后
-        List<Comment> allRootComments = new java.util.ArrayList<>();
+        List<Comment> allRootComments = new ArrayList<>();
         allRootComments.addAll(topComments);
         allRootComments.addAll(normalComments);
-
         if (allRootComments.isEmpty()) {
             return List.of();
         }
         return this.convertToCommentVO(allRootComments);
+    }
+
+    private void loadFromDBAndRebuildCache(Long vid){
+        // 1. 从DB加载最新一批评论（只加载一部分）
+        List<Comment> comments = this.list(
+                Wrappers.lambdaQuery(Comment.class)
+                        .eq(Comment::getVid, vid)
+                        .eq(Comment::getRootId, 0)
+                        .orderByDesc(Comment::getUpdateTime)
+                        .last("LIMIT 500")
+        );
+        // 2. 重建Redis（非常关键）
+        for (Comment c : comments) {
+            commentRedisRepo.addComment(c);
+        }
     }
 
     @Override
@@ -68,11 +92,15 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
         Set<Long> userIds = allComments.stream().map(Comment::getUid).collect(Collectors.toSet());
         Map<Long, UserData.BriefVO> userMap = userService.getBriefMapByIds(userIds);
 
-        // 用户行为状态映射 (like/dislike)
-        Long currentUid = AuthHelper.getCurrent().getId();
-        List<Long> commentIds = allComments.stream().map(Comment::getId).toList();
-        Set<Long> likedCommentIds = userLikeService.getLikedCommentIds(currentUid, commentIds);
-        Set<Long> dislikedCommentIds = userLikeService.getDislikedCommentIds(currentUid, commentIds);
+        // 如果当前用户已登录，则获取用户行为状态映射 (like/dislike)
+        Set<Long> likedCommentIds = new HashSet<>();
+        Set<Long> dislikedCommentIds = new HashSet<>();
+        if (AuthHelper.getCurrentOrNull() != null) {
+            Long currentUid = AuthHelper.getCurrent().getId();
+            List<Long> commentIds = allComments.stream().map(Comment::getId).toList();
+            likedCommentIds.addAll(userLikeService.getLikedCommentIds(currentUid, commentIds));
+            dislikedCommentIds.addAll(userLikeService.getDislikedCommentIds(currentUid, commentIds));
+        }
 
         return allComments.stream().map(comment -> {
             CommentData.CommentVO vo = new CommentData.CommentVO();
@@ -146,5 +174,14 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
                 .eq(Comment::getRootId, 0)
                 .eq(Comment::getIsTop, 1);
         return this.list(topWrapper);
+    }
+
+    @Override
+    public Double getScore(Long vid, String sortType, Long id) {
+        Comment comment = this.getById(id);
+        if(comment == null){
+            return 0D;
+        }
+        return commentRedisRepo.getScore(vid, sortType, id);
     }
 }

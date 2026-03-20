@@ -16,6 +16,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.ZoneId;
+import java.time.LocalDateTime;
+
 import java.util.List;
 
 @RestController
@@ -29,18 +32,25 @@ public class CommentController {
 
     @GetMapping("/list")
     @Operation(summary = "获取根评论列表", description = "feed流获取视频的根评论列表")
-    public Result<List<CommentData.CommentVO>> getRootComments(
+    public Result<PageResult<CommentData.CommentVO>> getRootComments(
             @RequestParam Long vid,
             @RequestParam(defaultValue = "hot") String sortType,
-            @RequestParam(defaultValue = "1") Integer page,
+            @RequestParam(required = false) String cursor,
             @RequestParam(defaultValue = "20") Integer size
     ){
         Video video = videoService.getById(vid);
-        if(video == null){
+        if (video == null) {
             return Result.failed("视频不存在");
         }
-        List<CommentData.CommentVO> result = commentService.getRootCommentsByFeed(vid, sortType, page, size);
-        return Result.success(result);
+        List<CommentData.CommentVO> items = commentService.getRootCommentsByFeed(vid, sortType, cursor, size);
+        boolean hasMore = items.size() == size;
+        String nextCursor = null;
+        if(hasMore){
+            CommentData.CommentVO last = items.get(items.size() - 1);
+            Double score = commentService.getScore(vid, sortType, last.getId());
+            nextCursor = String.valueOf(score);
+        }
+        return Result.success(PageResult.of(0L, items, nextCursor, hasMore));
     }
 
     @GetMapping("/count")

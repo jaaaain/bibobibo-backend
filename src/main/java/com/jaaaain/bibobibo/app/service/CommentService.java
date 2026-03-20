@@ -8,7 +8,9 @@ import com.jaaaain.bibobibo.dal.entity.Comment;
 import java.util.List;
 
 public interface CommentService extends IService<Comment> {
-    List<CommentData.CommentVO> getRootCommentsByFeed(Long vid, String sortType, Integer page, Integer size);
+    // 基于 cursor 的 feed 查询：cursor 为时间戳（毫秒）或 null（从最新开始），返回指定数量的根评论
+    List<CommentData.CommentVO> getRootCommentsByFeed(Long vid, String sortType, String cursor, Integer size);
+
 
     Long getCount(Long vid);
 
@@ -21,4 +23,6 @@ public interface CommentService extends IService<Comment> {
     void deleteComment(Comment comment);
 
     List<Comment> getTopComment(Long vid);
+
+    Double getScore(Long vid, String sortType, Long id);
 }
