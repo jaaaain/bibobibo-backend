@@ -22,4 +22,20 @@
     <select id="getCount" resultType="java.lang.Long">
         SELECT COUNT(*) FROM comment WHERE vid = #{vid}
     </select>
+    <select id="listOrderByCommentId" resultType="com.jaaaain.bibobibo.dal.entity.Comment">
+        SELECT * FROM comment
+        WHERE vid = #{vid}
+        AND id IN
+        <foreach item="item" index="index" collection="commentIds" separator="," open="(" close=")">
+            #{item}
+        </foreach>
+        AND root_id = 0
+        AND state = 0
+        AND deleted = 0
+        ORDER BY FIELD(id,
+        <foreach item="item" index="index" collection="commentIds" separator="," open="" close="">
+            ${item}
+        </foreach>
+        )
+    </select>
 </mapper>

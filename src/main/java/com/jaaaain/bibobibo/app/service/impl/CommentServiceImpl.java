@@ -49,14 +49,14 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
 
         Double cursorScore = firstPage ? null : Double.parseDouble(cursor);
         // 2. 查询普通根评论 (isTop=0, rootId=0) 并排序
-        Set<Long> commentIds = commentRedisRepo.getCommentByCursor(vid, sortType, cursorScore, size);
+        LinkedHashSet<Long> commentIds = commentRedisRepo.getCommentByCursor(vid, sortType, cursorScore, size);
         if(!commentIds.isEmpty()){
             LambdaQueryWrapper<Comment> normalWrapper = Wrappers.lambdaQuery();
             normalWrapper.in(Comment::getId, commentIds)
                     .eq(Comment::getIsTop, 0)
                     .eq(Comment::getRootId, 0)
                     .eq(Comment::getVid, vid);
-            normalComments = this.list(normalWrapper);
+            normalComments = commentMapper.listOrderByCommentId(commentIds,vid);
         } else if (firstPage) { // redis中没找到，且加载的是第一页时，从DB加载缓存
             loadFromDBAndRebuildCache(vid); // todo 异步加载缓存
         }

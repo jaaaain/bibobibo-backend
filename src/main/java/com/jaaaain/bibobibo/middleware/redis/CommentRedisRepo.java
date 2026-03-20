@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.ZoneOffset;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -54,7 +55,7 @@ public class CommentRedisRepo {
             throw new IllegalArgumentException("Invalid sortType: " + sortType);
         }
     }
-    public Set<Long> getCommentByCursor(Long vid, String sortType, Double cursor, int size){
+    public LinkedHashSet<Long> getCommentByCursor(Long vid, String sortType, Double cursor, int size){
         String key = "hot".equals(sortType) ? COMMENT_HOT_KEY + vid : COMMENT_TIME_KEY + vid;
         if(cursor == null){
             return redisClient.zRevRange(key, 0, size - 1);

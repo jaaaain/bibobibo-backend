@@ -116,6 +116,13 @@ public class CommentController {
         return Result.success();
     }
 
+    @PostMapping("/{id}/cancel-bad")
+    @Operation(summary = "取消点踩评论", description = "取消点踩评论")
+    public Result<Void> cancelDislikeComment(@PathVariable Long id) {
+        userLikeService.cancelDislikeComment(id);
+        return Result.success();
+    }
+
     @PostMapping("/{id}/top")
     @Operation(summary = "置顶评论", description = "视频作者置顶评论")
     public Result<Void> topComment(@PathVariable Long id) {

@@ -57,14 +57,25 @@ public class UserLikeServiceImpl extends ServiceImpl<UserLikeMapper, UserLike> i
         if(userLike == null || userLike.getStatus() == 0){
             return;
         }
-        userLike.setStatus(0);
-        this.updateById(userLike);
         if(userLike.getStatus() == 1){ // 已点赞
             commentRedisRepo.updateCommentLikeCount(id, -1);
         }
+        userLike.setStatus(0);
+        this.updateById(userLike);
         // todo MQ通知
     }
 
+    @Override
+    public void cancelDislikeComment(Long id) {
+        Long currentUid = AuthHelper.getCurrent().getId();
+        UserLike userLike = getUserLike(currentUid, 2, id);
+        if(userLike == null || userLike.getStatus() == 0){
+            return;
+        }
+        userLike.setStatus(0);
+        this.updateById(userLike);
+        // todo MQ通知
+    }
     @Override
     public void likeComment(Long id) {
         Long currentUid = AuthHelper.getCurrent().getId();
@@ -96,11 +107,7 @@ public class UserLikeServiceImpl extends ServiceImpl<UserLikeMapper, UserLike> i
     @Override
     public void dislikeComment(Long id) {
         Long currentUid = AuthHelper.getCurrent().getId();
-        LambdaQueryWrapper<UserLike> queryWrapper = Wrappers.lambdaQuery();
-        queryWrapper.eq(UserLike::getUid, currentUid)
-                .eq(UserLike::getTargetType, 2)
-                .eq(UserLike::getTargetId, id);
-        UserLike userLike = this.getOne(queryWrapper);
+        UserLike userLike = getUserLike(currentUid, 2, id);
         if(userLike != null){
             if(userLike.getStatus() == -1){ // 已点踩
                 return;

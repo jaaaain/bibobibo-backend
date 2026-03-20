@@ -4,10 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -74,20 +71,20 @@ public class RedisClient {
         redisTemplate.opsForZSet().add(key, value.toString(), score);
     }
     // 获取有序集合元素
-    public Set<Long> zRevRange(String key, long start, long end) {
+    public LinkedHashSet<Long> zRevRange(String key, long start, long end) {
         Set<Object> rawSet = redisTemplate.opsForZSet().reverseRange(key, start, end);
         if (rawSet == null) {
             return null;
         }
-        return rawSet.stream().map(v -> Long.valueOf(v.toString())).collect(Collectors.toSet());
+        return rawSet.stream().map(v -> Long.valueOf(v.toString())).collect(Collectors.toCollection(LinkedHashSet::new));
     }
     // cursor游标分页
-    public Set<Long> zRevRangeByScore(String key, double min, double max, long size) {
+    public LinkedHashSet<Long> zRevRangeByScore(String key, double min, double max, long size) {
         Set<Object> rawSet = redisTemplate.opsForZSet().reverseRangeByScore(key, min, max, 0, size);
         if (rawSet == null) {
             return null;
         }
-        return rawSet.stream().map(v -> Long.valueOf(v.toString())).collect(Collectors.toSet());
+        return rawSet.stream().map(v -> Long.valueOf(v.toString())).collect(Collectors.toCollection(LinkedHashSet::new));
     }
 
 

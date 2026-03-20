@@ -16,4 +16,6 @@ public interface UserLikeService extends IService<UserLike> {
     void likeComment(Long id);
 
     void dislikeComment(Long id);
+
+    void cancelDislikeComment(Long id);
 }
